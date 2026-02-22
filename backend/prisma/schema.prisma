@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User{
+  id String @id @default(cuid())
+  username String @unique
+  email String @unique
+  password String
+  employment Employment[]
+}
+
+model Organization{
+  id String @id @default(cuid())
+  name String
+  planId   String
+  employees Employment[]
+  usageLogs UsageLog[]
+  apiKeys ApiKey[]
+  plan Plan @relation(fields: [planId], references: [id])
+}
+
+model Employment{
+  id String @id @default(cuid())
+  userId String
+  orgId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id])
+  org Organization @relation(fields: [orgId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, orgId])
+}
+
+
+
+
+
+
+
+
+model Role{
+  id String @id @default(cuid())
+  name String
+  permissions RolePermission[]
+  employments Employment[]
+}
+
+model Permission{
+  id String @id @default(cuid())
+  key String @unique
+  roles RolePermission[]
+}
+
+model RolePermission {
+  roleId       String 
+  permissionId String
+
+  role       Role @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+  @@id([roleId, permissionId])
+}
+
+
+
+
+
+model Plan {
+  id    String @id @default(cuid())
+  name  String
+  features PlanFeature[]
+  organizations  Organization[]
+}
+
+model Feature {
+  id   String @id @default(cuid())
+  key  String @unique
+  plans PlanFeature[]
+}
+
+model PlanFeature {
+  planId    String
+  featureId String
+
+  plan    Plan @relation(fields: [planId], references: [id])
+  feature Feature @relation(fields: [featureId], references: [id])
+
+  @@id([planId, featureId])
+}
+
+
+
+
+
+model UsageLog {
+  id    String @id @default(cuid())
+  orgId String
+  type  String
+  count Int
+
+  org Organization @relation(fields: [orgId], references: [id])
+}
+
+
+
+model ApiKey {
+  id    String @id @default(cuid())
+  key   String
+  orgId String
+
+  org Organization @relation(fields: [orgId], references: [id])
+}
+
+
+
+model AuditLog {
+  id      String @id @default(cuid())
+  userId  String
+  orgId   String?
+  action  String
+  createdAt DateTime @default(now())
+}
