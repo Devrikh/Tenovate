@@ -17,17 +17,32 @@ export async function orgMiddleware(
      orgId: orgId,
      //@ts-ignore
      userId: req.user.id
+    },
+    include: {
+      role:{
+        include: {
+          permissions: {
+            include: {
+              permission: true
+            }
+          }
+        }
+      }
     }
   })
 
   if(!employment) return res.status(403).json({
     message: "Invalid Employment or Org"
   })
+
+
+
   //@ts-ignore
   req.employment = {
     orgId: employment.orgId,
-    roleId: employment.roleId
+    roleId: employment.roleId,
+    permissions: employment.role.permissions.map(rp=> rp.permission.key)
   };
-
+  
   next();
 }

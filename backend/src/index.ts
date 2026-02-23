@@ -37,21 +37,128 @@ app.get("/seed-db", async (req,res)=>{
 try {
   await prismaClient.$connect();
 
-  const adminRole = await prismaClient.role.create({
-    data: { name: "Admin" },
-  });
-  const memberRole = await prismaClient.role.create({
-    data: { name: "Member" },
+   console.log("Seeding database");
+
+  await prismaClient.$connect();
+
+
+
+  const adminRole = await prismaClient.role.upsert({
+    where: { name: "Admin" },
+    update: {},
+    create: { name: "Admin" },
   });
 
-  const freePlan = await prismaClient.plan.create({
-    data: {
-      name: "Free Plan",
+  const memberRole = await prismaClient.role.upsert({
+    where: { name: "Member" },
+    update: {},
+    create: { name: "Member" },
+  });
+
+
+
+
+  const projectCreate = await prismaClient.permission.upsert({
+    where: { key: "project:create" },
+    update: {},
+    create: { key: "project:create" },
+  });
+
+  const projectRead = await prismaClient.permission.upsert({
+    where: { key: "project:read" },
+    update: {},
+    create: { key: "project:read" },
+  });
+
+  const projectDelete = await prismaClient.permission.upsert({
+    where: { key: "project:delete" },
+    update: {},
+    create: { key: "project:delete" },
+  });
+
+  const memberInvite = await prismaClient.permission.upsert({
+    where: { key: "member:invite" },
+    update: {},
+    create: { key: "member:invite" },
+  });
+
+  //Admin has all permissions
+  await prismaClient.rolePermission.upsert({
+    where: {
+      roleId_permissionId: {
+        roleId: adminRole.id,
+        permissionId: projectCreate.id,
+      },
+    },
+    update: {},
+    create: {
+      roleId: adminRole.id,
+      permissionId: projectCreate.id,
+    },
+  });
+
+  await prismaClient.rolePermission.upsert({
+    where: {
+      roleId_permissionId: {
+        roleId: adminRole.id,
+        permissionId: projectRead.id,
+      },
+    },
+    update: {},
+    create: {
+      roleId: adminRole.id,
+      permissionId: projectRead.id,
+    },
+  });
+
+  await prismaClient.rolePermission.upsert({
+    where: {
+      roleId_permissionId: {
+        roleId: adminRole.id,
+        permissionId: projectDelete.id,
+      },
+    },
+    update: {},
+    create: {
+      roleId: adminRole.id,
+      permissionId: projectDelete.id,
+    },
+  });
+
+  await prismaClient.rolePermission.upsert({
+    where: {
+      roleId_permissionId: {
+        roleId: adminRole.id,
+        permissionId: memberInvite.id,
+      },
+    },
+    update: {},
+    create: {
+      roleId: adminRole.id,
+      permissionId: memberInvite.id,
     },
   });
 
 
-  console.log(adminRole,memberRole,freePlan);
+  //Members only read
+  await prismaClient.rolePermission.upsert({
+    where: {
+      roleId_permissionId: {
+        roleId: memberRole.id,
+        permissionId: projectRead.id,
+      },
+    },
+    update: {},
+    create: {
+      roleId: memberRole.id,
+      permissionId: projectRead.id,
+    },
+  });
+
+  console.log("Database seeding complete.");
+
+
+
 } catch (e) {
   console.error(e);
   res.json({

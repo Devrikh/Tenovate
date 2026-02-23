@@ -13,6 +13,17 @@ export async function orgMiddleware(req, res, next) {
             orgId: orgId,
             //@ts-ignore
             userId: req.user.id
+        },
+        include: {
+            role: {
+                include: {
+                    permissions: {
+                        include: {
+                            permission: true
+                        }
+                    }
+                }
+            }
         }
     });
     if (!employment)
@@ -22,7 +33,8 @@ export async function orgMiddleware(req, res, next) {
     //@ts-ignore
     req.employment = {
         orgId: employment.orgId,
-        roleId: employment.roleId
+        roleId: employment.roleId,
+        permissions: employment.role.permissions.map(rp => rp.permission.key)
     };
     next();
 }

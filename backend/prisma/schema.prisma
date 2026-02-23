@@ -24,6 +24,8 @@ model Organization{
   usageLogs UsageLog[]
   apiKeys ApiKey[]
   projects Project[]
+  invitations Invitation[]
+
   plan Plan @relation(fields: [planId], references: [id])
 }
 
@@ -49,9 +51,10 @@ model Employment{
 
 model Role{
   id String @id @default(cuid())
-  name String
+  name String @unique
   permissions RolePermission[]
   employments Employment[]
+  invitations Invitation[]
 }
 
 model Permission{
@@ -109,13 +112,6 @@ model UsageLog {
   org Organization @relation(fields: [orgId], references: [id])
 }
 
-model ApiKey {
-  id    String @id @default(cuid())
-  key   String
-  orgId String
-
-  org Organization @relation(fields: [orgId], references: [id])
-}
 
 model AuditLog {
   id      String @id @default(cuid())
@@ -126,6 +122,13 @@ model AuditLog {
 }
 
 
+model ApiKey {
+  id    String @id @default(cuid())
+  key   String
+  orgId String
+
+  org Organization @relation(fields: [orgId], references: [id])
+}
 
 model Project {
   id             String @id @default(cuid())
@@ -136,5 +139,29 @@ model Project {
   org Organization @relation(fields: [organizationId], references: [id])
 }
 
+
+
+model Invitation {
+  id        String   @id @default(cuid())
+  email     String
+  orgId     String
+  roleId    String
+  token     String   @unique
+  status    InvitationStatus @default(PENDING)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  org  Organization @relation(fields: [orgId], references: [id])
+  role Role         @relation(fields: [roleId], references: [id])
+
+  @@index([email])
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
 
 
