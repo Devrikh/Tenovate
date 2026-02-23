@@ -1,9 +1,10 @@
 import express from "express";
 import cors from "cors";
 import { prismaClient } from "./lib/prisma.js";
-import authRouter from "./routes/authRoute.js";
+import authRouter from "./routes/authRoutes.js";
 import env from "dotenv";
 import orgRouter from "./routes/orgRoutes.js";
+import projRouter from "./routes/projectRoutes.js";
 const app = express();
 env.config();
 app.use(express.json());
@@ -47,7 +48,8 @@ app.get("/seed-db", async (req, res) => {
     });
 });
 app.use("/auth", authRouter);
-app.use("/orgs", orgRouter);
+app.use("/org", orgRouter);
+app.use("/project", projRouter);
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

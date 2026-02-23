@@ -23,6 +23,7 @@ model Organization{
   employees Employment[]
   usageLogs UsageLog[]
   apiKeys ApiKey[]
+  projects Project[]
   plan Plan @relation(fields: [planId], references: [id])
 }
 
@@ -108,8 +109,6 @@ model UsageLog {
   org Organization @relation(fields: [orgId], references: [id])
 }
 
-
-
 model ApiKey {
   id    String @id @default(cuid())
   key   String
@@ -118,8 +117,6 @@ model ApiKey {
   org Organization @relation(fields: [orgId], references: [id])
 }
 
-
-
 model AuditLog {
   id      String @id @default(cuid())
   userId  String
@@ -127,3 +124,17 @@ model AuditLog {
   action  String
   createdAt DateTime @default(now())
 }
+
+
+
+model Project {
+  id             String @id @default(cuid())
+  name           String
+  organizationId String
+  createdAt      DateTime @default(now())
+
+  org Organization @relation(fields: [organizationId], references: [id])
+}
+
+
+

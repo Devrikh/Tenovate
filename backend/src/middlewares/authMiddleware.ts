@@ -1,7 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import { prismaClient } from "../lib/prisma.js";
 
-export function authMiddleware(
+export async function authMiddleware(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -22,8 +23,19 @@ export function authMiddleware(
   }
 
   const decoded = jwt.verify(token, secret);
+
+  const validatedUser= await prismaClient.user.findFirst({
+    //@ts-ignore
+    where:{ id: decoded.userId}
+  })
+  if(!validatedUser) return res.json({message: "User Not Found"});
   //@ts-ignore
-  req.user = decoded;
+  req.user = {
+    username: validatedUser.username,
+    email: validatedUser.email,
+    id: validatedUser.id
+  };
+  
 
   next();
 }

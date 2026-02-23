@@ -1,7 +1,7 @@
 import { prismaClient } from "../lib/prisma.js";
 export async function orgCreate(req, res) {
     //@ts-ignore
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const { orgName, planId } = req.body;
     const org = await prismaClient.organization.create({
         data: {
@@ -26,11 +26,13 @@ export async function orgCreate(req, res) {
 }
 export async function fetchOrg(req, res) {
     //@ts-ignore
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const orgs = await prismaClient.employment.findMany({
         where: { userId },
         include: { org: true }
     });
     res.json(orgs);
+}
+export async function inviteEmployee(req, res) {
 }
 //# sourceMappingURL=orgController.js.map
