@@ -46,7 +46,7 @@ export async function fetchOrg(req: Request, res: Response) {
 export async function inviteEmployee(req: Request, res: Response) {
   const { role, email } = req.body;
   //@ts-ignore
-  const { orgId } = req.employment;
+  const { orgId } = req.org;
 
   const validatedRole = await prismaClient.role.findFirst({
     where: {
@@ -87,6 +87,8 @@ export async function acceptEmployee(req: Request, res: Response) {
   const user = req.user;
 
   const { token } = req.query;
+  //@ts-ignore
+  const usage= req.org.usage;
 
   if (!token ) {
     return res.status(400).json({ message: "Token is required" });
@@ -133,6 +135,16 @@ export async function acceptEmployee(req: Request, res: Response) {
       },
     });
 
+    await prismaClient.usageLog.update({
+      where: {
+        id: usage.id,
+      },
+      data: {
+        count: {increment: 1},
+      },
+    });
+
+    
     return res.json({
       message: "You have successfully joined the organization!",
     });

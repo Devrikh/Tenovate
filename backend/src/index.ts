@@ -58,25 +58,25 @@ try {
 
 
 
-  const projectCreate = await prismaClient.permission.upsert({
+  const projectCreatePermission = await prismaClient.permission.upsert({
     where: { key: "project:create" },
     update: {},
     create: { key: "project:create" },
   });
 
-  const projectRead = await prismaClient.permission.upsert({
+  const projectReadPermission = await prismaClient.permission.upsert({
     where: { key: "project:read" },
     update: {},
     create: { key: "project:read" },
   });
 
-  const projectDelete = await prismaClient.permission.upsert({
+  const projectDeletePermission = await prismaClient.permission.upsert({
     where: { key: "project:delete" },
     update: {},
     create: { key: "project:delete" },
   });
 
-  const memberInvite = await prismaClient.permission.upsert({
+  const memberInvitePermission = await prismaClient.permission.upsert({
     where: { key: "member:invite" },
     update: {},
     create: { key: "member:invite" },
@@ -87,13 +87,13 @@ try {
     where: {
       roleId_permissionId: {
         roleId: adminRole.id,
-        permissionId: projectCreate.id,
+        permissionId: projectCreatePermission.id,
       },
     },
     update: {},
     create: {
       roleId: adminRole.id,
-      permissionId: projectCreate.id,
+      permissionId: projectCreatePermission.id,
     },
   });
 
@@ -101,13 +101,13 @@ try {
     where: {
       roleId_permissionId: {
         roleId: adminRole.id,
-        permissionId: projectRead.id,
+        permissionId: projectReadPermission.id,
       },
     },
     update: {},
     create: {
       roleId: adminRole.id,
-      permissionId: projectRead.id,
+      permissionId: projectReadPermission.id,
     },
   });
 
@@ -115,13 +115,13 @@ try {
     where: {
       roleId_permissionId: {
         roleId: adminRole.id,
-        permissionId: projectDelete.id,
+        permissionId: projectDeletePermission.id,
       },
     },
     update: {},
     create: {
       roleId: adminRole.id,
-      permissionId: projectDelete.id,
+      permissionId: projectDeletePermission.id,
     },
   });
 
@@ -129,15 +129,16 @@ try {
     where: {
       roleId_permissionId: {
         roleId: adminRole.id,
-        permissionId: memberInvite.id,
+        permissionId: memberInvitePermission.id,
       },
     },
     update: {},
     create: {
       roleId: adminRole.id,
-      permissionId: memberInvite.id,
+      permissionId: memberInvitePermission.id,
     },
   });
+
 
 
   //Members only read
@@ -145,15 +146,97 @@ try {
     where: {
       roleId_permissionId: {
         roleId: memberRole.id,
-        permissionId: projectRead.id,
+        permissionId: projectReadPermission.id,
       },
     },
     update: {},
     create: {
       roleId: memberRole.id,
-      permissionId: projectRead.id,
+      permissionId: projectReadPermission.id,
     },
   });
+
+
+
+
+
+
+
+  const freePlan = await prismaClient.plan.upsert({
+  where: { name: "FREE" },
+  update: {},
+  create: { name: "FREE" },
+});
+
+const proPlan = await prismaClient.plan.upsert({
+  where: { name: "PRO" },
+  update: {},
+  create: { name: "PRO" },
+});
+
+const mythicPlan = await prismaClient.plan.upsert({
+  where: { name: "MYTHIC" },
+  update: {},
+  create: { name: "MYTHIC" },
+});
+
+
+
+
+const projectCreateFeature = await prismaClient.feature.upsert({
+  where: { key: "project:create" },
+  update: {},
+  create: { key: "project:create" },
+});
+
+const memberInviteFeature = await prismaClient.feature.upsert({
+  where: { key: "member:invite" },
+  update: {},
+  create: { key: "member:invite" },
+});
+
+
+
+await prismaClient.planFeature.upsert({
+  where: { planId_featureId: { planId: freePlan.id, featureId: projectCreateFeature.id } },
+  update: {},
+  create: { planId: freePlan.id, featureId: projectCreateFeature.id, limit: 3 }, 
+});
+
+await prismaClient.planFeature.upsert({
+  where: { planId_featureId: { planId: freePlan.id, featureId: memberInviteFeature.id } },
+  update: {},
+  create: { planId: freePlan.id, featureId: memberInviteFeature.id, limit: 2 },
+});
+
+
+await prismaClient.planFeature.upsert({
+  where: { planId_featureId: { planId: proPlan.id, featureId: projectCreateFeature.id } },
+  update: {},
+  create: { planId: proPlan.id, featureId: projectCreateFeature.id, limit: 10 },
+});
+
+await prismaClient.planFeature.upsert({
+  where: { planId_featureId: { planId: proPlan.id, featureId: memberInviteFeature.id } },
+  update: {},
+  create: { planId: proPlan.id, featureId: memberInviteFeature.id, limit: 10 }, 
+});
+
+
+
+await prismaClient.planFeature.upsert({
+  where: { planId_featureId: { planId: mythicPlan.id, featureId: projectCreateFeature.id } },
+  update: {},
+  create: { planId: mythicPlan.id, featureId: projectCreateFeature.id, limit: 50 },
+});
+
+await prismaClient.planFeature.upsert({
+  where: { planId_featureId: { planId: mythicPlan.id, featureId: memberInviteFeature.id } },
+  update: {},
+  create: { planId: mythicPlan.id, featureId: memberInviteFeature.id, limit: null },
+});
+
+
 
   console.log("Database seeding complete.");
 

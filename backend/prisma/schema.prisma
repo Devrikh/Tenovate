@@ -78,7 +78,7 @@ model RolePermission {
 
 model Plan {
   id    String @id @default(cuid())
-  name  String
+  name  String @unique
   features PlanFeature[]
   organizations  Organization[]
 }
@@ -92,6 +92,7 @@ model Feature {
 model PlanFeature {
   planId    String
   featureId String
+  limit  Int?
 
   plan    Plan @relation(fields: [planId], references: [id])
   feature Feature @relation(fields: [featureId], references: [id])
@@ -106,10 +107,11 @@ model PlanFeature {
 model UsageLog {
   id    String @id @default(cuid())
   orgId String
-  type  String
-  count Int
+  featureKey String
+  count Int @default(0)
 
   org Organization @relation(fields: [orgId], references: [id])
+
 }
 
 

@@ -6,7 +6,9 @@ export async function createProject(req: Request, res: Response){
     //@ts-ignore
     const userId= req.user.id;
     //@ts-ignore
-    const {orgId,roleId}= req.employment;
+    const {orgId}= req.org;
+    //@ts-ignore
+    const usage= req.org.usage;
 
     const {name}=req.body;
 
@@ -17,6 +19,16 @@ export async function createProject(req: Request, res: Response){
             organizationId: orgId
         }
     })
+
+    await prismaClient.usageLog.update({
+      where: {
+        id: usage.id,
+      },
+      data: {
+        count: {increment: 1},
+      },
+    });
+
 
     res.json({message: "Project Created",
         project
@@ -29,7 +41,7 @@ export async function createProject(req: Request, res: Response){
 
 export async function fetchProjects(req: Request, res: Response) {
     //@ts-ignore
-    const {orgId,roleId}= req.employment;
+    const {orgId}= req.org;
 
     const projects= await prismaClient.project.findMany({
         where:{
