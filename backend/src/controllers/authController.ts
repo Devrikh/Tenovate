@@ -2,10 +2,21 @@ import bcrypt from "bcrypt";
 import { prismaClient } from "../lib/prisma.js";
 import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import { userLoginSchema, userSignupSchema } from "../schemas/authSchema.js";
 
 
 export async function signUp(req: Request, res: Response) {
-  const { username, email, password } = req.body;
+
+  const parsed = userSignupSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: "Invalid input",
+      errors: parsed.error.format(),
+    });
+  }
+
+  const { username, email, password } = parsed.data;
   const hashedPassword = bcrypt.hashSync(password, 10);
 
   const user = await prismaClient.user.create({
@@ -20,7 +31,18 @@ export async function signUp(req: Request, res: Response) {
 }
 
 export async function login(req: Request, res: Response) {
-  const { email, password } = req.body;
+
+
+   const parsed = userLoginSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: "Invalid input",
+      errors: parsed.error.format(),
+    });
+  }
+
+  const { email, password } = parsed.data;
 
   const user = await prismaClient.user.findUnique({ where: { email } });
   const valid = await bcrypt.compare(password, user!.password);

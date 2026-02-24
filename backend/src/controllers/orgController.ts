@@ -1,11 +1,30 @@
 import type { Request, Response } from "express";
 import { prismaClient } from "../lib/prisma.js";
 import crypto from "crypto";
+import { orgCreateSchema } from "../schemas/orgScema.js";
+import { invitationSchema, tokenSchema } from "../schemas/inviteSchema.js";
 
 export async function orgCreate(req: Request, res: Response) {
+
+
+
+ const parsed = orgCreateSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: "Invalid input",
+      errors: parsed.error.format(),
+    });
+  }
+
+
+
+
+
+
   //@ts-ignore
   const userId = req.user.id;
-  const { orgName, planId } = req.body;
+  const { orgName, planId } = parsed.data;
 
   const org = await prismaClient.organization.create({
     data: {
@@ -44,7 +63,19 @@ export async function fetchOrg(req: Request, res: Response) {
 }
 
 export async function inviteEmployee(req: Request, res: Response) {
-  const { role, email } = req.body;
+
+
+  const parsed = invitationSchema.safeParse(req.body);
+  
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Invalid token",
+        errors: parsed.error.format(),
+      });
+    }
+
+
+  const { role, email } = parsed.data;
   //@ts-ignore
   const { orgId } = req.org;
 
@@ -83,10 +114,24 @@ export async function inviteEmployee(req: Request, res: Response) {
 }
 
 export async function acceptEmployee(req: Request, res: Response) {
+
+
+   const parsed = tokenSchema.safeParse(req.query);
+  
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Invalid token",
+        errors: parsed.error.format(),
+      });
+    }
+
+
   //@ts-ignore
   const user = req.user;
 
-  const { token } = req.query;
+
+
+  const { token } = parsed.data;
   //@ts-ignore
   const usage= req.org.usage;
 
