@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
-import { prismaClient } from "../lib/prisma.js";
+import { prismaClient } from "../lib/prisma/prisma.js";
 import crypto from "crypto";
-import { orgCreateSchema } from "../schemas/orgScema.js";
-import { invitationSchema, tokenSchema } from "../schemas/inviteSchema.js";
+import { orgCreateSchema } from "../validators/orgScema.js";
+import { invitationSchema, tokenSchema } from "../validators/inviteSchema.js";
 
 export async function orgCreate(req: Request, res: Response) {
   try {
@@ -76,87 +76,84 @@ export async function fetchOrg(req: Request, res: Response) {
 }
 
 export async function inviteEmployee(req: Request, res: Response) {
-  try{
+  try {
     const parsed = invitationSchema.safeParse(req.body);
 
-  if (!parsed.success) {
-    return res.status(400).json({
-      message: "Invalid token",
-      errors: parsed.error.format(),
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Invalid token",
+        errors: parsed.error.format(),
+      });
+    }
+
+    const { role, email } = parsed.data;
+    //@ts-ignore
+    const { orgId } = req.org;
+
+    const validatedRole = await prismaClient.role.findFirst({
+      where: {
+        name: role,
+      },
     });
-  }
 
-  const { role, email } = parsed.data;
-  //@ts-ignore
-  const { orgId } = req.org;
-
-  const validatedRole = await prismaClient.role.findFirst({
-    where: {
-      name: role,
-    },
-  });
-
-  if (!validatedRole) {
+    if (!validatedRole) {
       return res.status(400).json({ message: "Invalid role" });
     }
 
-  const rawToken = crypto.randomBytes(32).toString("hex");
+    const rawToken = crypto.randomBytes(32).toString("hex");
 
-  const hashedToken = crypto
-    .createHash("sha256")
-    .update(rawToken)
-    .digest("hex");
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex");
 
-  const invite = await prismaClient.invitation.create({
-    data: {
-      roleId: validatedRole?.id,
-      orgId,
-      email,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), //7 days
-      token: hashedToken,
-    },
-  });
+    const invite = await prismaClient.invitation.create({
+      data: {
+        roleId: validatedRole?.id,
+        orgId,
+        email,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), //7 days
+        token: hashedToken,
+      },
+    });
 
-  res.status(201).json({
+    res.status(201).json({
       message: "Invitation sent",
       inviteLink: `http://localhost:3000/org/invite/accept?token=${rawToken}`,
       invite,
     });
-  }catch(e){
-      console.error("Send Invitation Error:", e);
+  } catch (e) {
+    console.error("Send Invitation Error:", e);
     res.status(500).json({ message: "Internal server error" });
-    }
+  }
 }
 
 export async function acceptEmployee(req: Request, res: Response) {
-   try {
+  try {
     const parsed = tokenSchema.safeParse(req.query);
 
-  if (!parsed.success) {
-    return res.status(400).json({
-      message: "Invalid token",
-      errors: parsed.error.format(),
-    });
-  }
-
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Invalid token",
+        errors: parsed.error.format(),
+      });
+    }
 
     const { token } = parsed.data;
 
-  if (!token || typeof token != "string") {
-    return res.status(400).json({ message: "Token is required and must be a string" })
-  }
-
+    if (!token || typeof token != "string") {
+      return res
+        .status(400)
+        .json({ message: "Token is required and must be a string" });
+    }
 
     //@ts-ignore
-  const user = req.user;
-  //@ts-ignore
-  const usage = req.org.usage;
+    const user = req.user;
+    //@ts-ignore
+    const usage = req.org.usage;
 
-   
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-
- 
     const invitation = await prismaClient.invitation.findFirst({
       where: {
         token: hashedToken,

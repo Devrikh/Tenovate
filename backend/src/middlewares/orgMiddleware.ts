@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { prismaClient } from "../lib/prisma.js";
+import { prismaClient } from "../lib/prisma/prisma.js";
 
 export async function orgMiddleware(
   req: Request,
@@ -80,7 +80,6 @@ export async function orgMiddleware(
         limit: pf.limit,
       })),
     };
-
 
     next();
   } catch (e) {

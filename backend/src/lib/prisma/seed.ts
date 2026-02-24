@@ -1,0 +1,165 @@
+import type { Permission, Role } from "@prisma/client";
+import { prismaClient } from "./prisma.js";
+import bcrypt from "bcrypt"
+
+
+const prisma=prismaClient;
+async function main() {
+
+  // --- Features ---
+   const featureCreate = await prisma.feature.upsert({
+    where: { key: 'project:create' },
+    update: {},
+    create: { key: 'project:create' },
+  });
+
+  const featureInvite = await prisma.feature.upsert({
+    where: { key: 'member:invite' },
+    update: {},
+    create: { key: 'member:invite' },
+  });
+
+  // --- Plans ---
+  const planFree = await prisma.plan.upsert({
+    where: { name: 'FREE' },
+    update: {},
+    create: { name: 'FREE' },
+  });
+
+  const planPro = await prisma.plan.upsert({
+    where: { name: 'PRO' },
+    update: {},
+    create: { name: 'PRO' },
+  });
+
+  const planMythic = await prisma.plan.upsert({
+    where: { name: 'MYTHIC' },
+    update: {},
+    create: { name: 'MYTHIC' },
+  });
+
+  // --- Plan Features ---
+  await prisma.planFeature.createMany({
+    data: [
+      { planId: planFree.id, featureId: featureCreate.id, limit: 1 },
+      { planId: planFree.id, featureId: featureInvite.id, limit: 1 },
+      { planId: planPro.id, featureId: featureCreate.id, limit: 10 },
+      { planId: planPro.id, featureId: featureInvite.id, limit: 10 },
+      { planId: planMythic.id, featureId: featureCreate.id, limit: 100 },
+      { planId: planMythic.id, featureId: featureInvite.id, limit: 100 },
+    ],
+    skipDuplicates: true,
+  });
+
+  // --- Permissions ---
+  const permissionKeys = [
+    'project:create',
+    'project:read',
+    'project:update',
+    'project:delete',
+    'employee:invite',
+    'employee:fire',
+  ];
+
+  const permissions = new Map<string, Permission>();
+
+  for (const key of permissionKeys) {
+    const perm = await prisma.permission.upsert({
+      where: { key },
+      update: {},
+      create: { key },
+    });
+    permissions.set(key, perm);
+  }
+
+  // --- Roles ---
+  const roleNames = ['ADMIN', 'MODERATOR', 'MEMBER'];
+  const roles = new Map<string, Role>();
+
+  for (const name of roleNames) {
+    const role = await prisma.role.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+    roles.set(name, role);
+  }
+
+  // --- Assign Permissions to Roles ---
+  const rolePermissionsMap: { [key: string]: string[] } = {
+    ADMIN: permissionKeys,
+    MODERATOR: ['project:create', 'project:read', 'project:update', 'project:delete'],
+    MEMBER: ['project:read'],
+  };
+
+  for (const roleName of roleNames) {
+    const permsForRole = rolePermissionsMap[roleName];
+    const roleObj = roles.get(roleName);
+    if (!roleObj) continue;
+
+    for (const key of permsForRole!) {
+      const permObj = permissions.get(key);
+      if (!permObj) continue;
+
+      await prisma.rolePermission.upsert({
+        where: { roleId_permissionId: { roleId: roleObj.id, permissionId: permObj.id } },
+        update: {},
+        create: { roleId: roleObj.id, permissionId: permObj.id },
+      });
+    }
+  }
+
+  // --- Organization ---
+  const org = await prisma.organization.upsert({
+    where: { name: 'ExampleOrg' },
+    update: {},
+    create: { name: 'ExampleOrg', planId: planFree.id },
+  });
+
+  // --- Users ---
+  const adminPassword = await bcrypt.hash('admin123', 10);
+  const memberPassword = await bcrypt.hash('member123', 10);
+
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'admin@example.com' },
+    update: {},
+    create: { username: 'admin', email: 'admin@example.com', password: adminPassword },
+  });
+
+  const memberUser = await prisma.user.upsert({
+    where: { email: 'member@example.com' },
+    update: {},
+    create: { username: 'member', email: 'member@example.com', password: memberPassword },
+  });
+
+  // --- Employment ---
+  const adminRole = roles.get('ADMIN');
+  const memberRole = roles.get('MEMBER');
+
+  if (adminRole) {
+    await prisma.employment.upsert({
+      where: { userId_orgId: { userId: adminUser.id, orgId: org.id } },
+      update: {},
+      create: { userId: adminUser.id, orgId: org.id, roleId: adminRole.id },
+    });
+  }
+
+  if (memberRole) {
+    await prisma.employment.upsert({
+      where: { userId_orgId: { userId: memberUser.id, orgId: org.id } },
+      update: {},
+      create: { userId: memberUser.id, orgId: org.id, roleId: memberRole.id },
+    });
+  }
+
+  console.log('Seed complete : 1 org, 2 users, 3 roles, permissions, plans, features');
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

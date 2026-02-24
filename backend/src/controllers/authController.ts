@@ -1,8 +1,8 @@
 import bcrypt from "bcrypt";
-import { prismaClient } from "../lib/prisma.js";
+import { prismaClient } from "../lib/prisma/prisma.js";
 import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { userLoginSchema, userSignupSchema } from "../schemas/authSchema.js";
+import { userLoginSchema, userSignupSchema } from "../validators/authSchema.js";
 
 export async function signUp(req: Request, res: Response) {
   try {
