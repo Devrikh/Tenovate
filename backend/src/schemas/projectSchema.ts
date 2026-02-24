@@ -11,3 +11,9 @@ export const createProjectSchema = z.object({
       "Project name can only contain letters, numbers, spaces, dash, underscore, and dot"
     ),
 });
+
+export const deleteProjectSchema = z.object({
+  projId: z
+    .string()
+    .cuid("Invalid project ID")
+});

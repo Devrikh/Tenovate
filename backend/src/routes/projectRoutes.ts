@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 import { orgMiddleware } from "../middlewares/orgMiddleware.js";
-import { createProject, fetchProjects } from "../controllers/projController.js";
+import { createProject, deleteProject, fetchProjects } from "../controllers/projController.js";
 import { requirePermission } from "../middlewares/permissionMiddleware.js";
 import { requireFeature } from "../middlewares/featureMiddleware.js";
 import { checkUsageLimit } from "../middlewares/usageMiddleware.js";
@@ -23,5 +23,7 @@ projRouter.post(
   checkUsageLimit("project:create"),
   createProject,
 );
+
+projRouter.post("/delete",requirePermission("project:delete"),deleteProject)
 
 export default projRouter;

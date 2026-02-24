@@ -1,12 +1,20 @@
 import { prismaClient } from "../lib/prisma.js";
+import { createProjectSchema } from "../schemas/projectSchema.js";
 export async function createProject(req, res) {
+    const parsed = createProjectSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({
+            message: "Invalid token",
+            errors: parsed.error.format(),
+        });
+    }
     //@ts-ignore
     const userId = req.user.id;
     //@ts-ignore
     const { orgId } = req.org;
     //@ts-ignore
     const usage = req.org.usage;
-    const { name } = req.body;
+    const { name } = parsed.data;
     const project = await prismaClient.project.create({
         data: {
             name: name,

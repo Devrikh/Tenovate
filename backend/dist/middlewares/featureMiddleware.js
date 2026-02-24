@@ -5,7 +5,6 @@ export function requireFeature(featureKey) {
         if (!feature) {
             res.status(403).json({ error: "Feature not available" });
         }
-        console.log(feature);
         // //@ts-ignore
         // req.org.feature= feature;
         next();

@@ -134,11 +134,11 @@ model ApiKey {
 
 model Project {
   id             String @id @default(cuid())
-  name           String
-  organizationId String
+  name           String 
+  orgId          String
   createdAt      DateTime @default(now())
 
-  org Organization @relation(fields: [organizationId], references: [id])
+  org Organization @relation(fields: [orgId], references: [id])
 }
 
 
