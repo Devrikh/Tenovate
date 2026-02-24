@@ -4,7 +4,7 @@ import { orgMiddleware } from "../middlewares/orgMiddleware.js";
 import { createProject, deleteProject, fetchProjects } from "../controllers/projController.js";
 import { requirePermission } from "../middlewares/permissionMiddleware.js";
 import { requireFeature } from "../middlewares/featureMiddleware.js";
-import { checkUsageLimit } from "../middlewares/usageMiddleware.js";
+import { attachUsage, checkUsageLimit } from "../middlewares/usageMiddleware.js";
 
 const projRouter = Router();
 
@@ -24,6 +24,6 @@ projRouter.post(
   createProject,
 );
 
-projRouter.post("/delete",requirePermission("project:delete"),deleteProject)
+projRouter.delete("/delete",requirePermission("project:delete"), attachUsage("project:create"),deleteProject)
 
 export default projRouter;

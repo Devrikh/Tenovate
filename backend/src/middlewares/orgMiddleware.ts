@@ -81,8 +81,6 @@ export async function orgMiddleware(
       })),
     };
 
-    //@ts-ignore
-    console.log("Organization middleware:", req.org, req.employment);
 
     next();
   } catch (e) {

@@ -3,109 +3,132 @@ import crypto from "crypto";
 import { orgCreateSchema } from "../schemas/orgScema.js";
 import { invitationSchema, tokenSchema } from "../schemas/inviteSchema.js";
 export async function orgCreate(req, res) {
-    const parsed = orgCreateSchema.safeParse(req.body);
-    if (!parsed.success) {
-        return res.status(400).json({
-            message: "Invalid input",
-            errors: parsed.error.format(),
+    try {
+        const parsed = orgCreateSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({
+                message: "Invalid input",
+                errors: parsed.error.format(),
+            });
+        }
+        const { orgName, planId } = parsed.data;
+        //@ts-ignore
+        const userId = req.user.id;
+        if (!userId) {
+            return res.status(401).json({ message: "User not authenticated" });
+        }
+        const org = await prismaClient.organization.create({
+            data: {
+                name: orgName,
+                planId,
+            },
+        });
+        const adminRole = await prismaClient.role.findFirst({
+            where: { name: "Admin" },
+        });
+        if (!adminRole) {
+            console.error("Admin role not found");
+            return res.status(500).json({ message: "Internal server error" });
+        }
+        const employment = await prismaClient.employment.create({
+            data: {
+                userId: userId,
+                orgId: org.id,
+                roleId: adminRole?.id,
+            },
+        });
+        res.status(201).json({
+            message: "Organization created successfully",
+            organization: org,
+            employment,
         });
     }
-    //@ts-ignore
-    const userId = req.user.id;
-    const { orgName, planId } = parsed.data;
-    const org = await prismaClient.organization.create({
-        data: {
-            name: orgName,
-            planId,
-        },
-    });
-    const adminRole = await prismaClient.role.findFirst({
-        where: { name: "Admin" },
-    });
-    if (!adminRole) {
-        throw new Error("Admin role not found");
+    catch (e) {
+        console.error("Create Organization Error:", e);
+        res.status(500).json({ message: "Internal server error" });
     }
-    const employment = await prismaClient.employment.create({
-        data: {
-            userId: userId,
-            orgId: org.id,
-            roleId: adminRole?.id,
-        },
-    });
-    res.json({ message: "Organization Created!!", org, employment });
 }
 export async function fetchOrg(req, res) {
-    //@ts-ignore
-    const userId = req.user.id;
-    const orgs = await prismaClient.employment.findMany({
-        where: { userId },
-        include: { org: true },
-    });
-    res.json(orgs);
+    try {
+        //@ts-ignore
+        const userId = req.user.id;
+        if (!userId) {
+            return res.status(401).json({ message: "User not authenticated" });
+        }
+        const orgs = await prismaClient.employment.findMany({
+            where: { userId },
+            include: { org: true },
+        });
+        res.status(200).json({ organizations: orgs });
+    }
+    catch (e) {
+        console.error("Error fetching user organizations:", e);
+        res.status(500).json({ message: "Internal server error" });
+    }
 }
 export async function inviteEmployee(req, res) {
-    const parsed = invitationSchema.safeParse(req.body);
-    if (!parsed.success) {
-        return res.status(400).json({
-            message: "Invalid token",
-            errors: parsed.error.format(),
+    try {
+        const parsed = invitationSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({
+                message: "Invalid token",
+                errors: parsed.error.format(),
+            });
+        }
+        const { role, email } = parsed.data;
+        //@ts-ignore
+        const { orgId } = req.org;
+        const validatedRole = await prismaClient.role.findFirst({
+            where: {
+                name: role,
+            },
+        });
+        if (!validatedRole) {
+            return res.status(400).json({ message: "Invalid role" });
+        }
+        const rawToken = crypto.randomBytes(32).toString("hex");
+        const hashedToken = crypto
+            .createHash("sha256")
+            .update(rawToken)
+            .digest("hex");
+        const invite = await prismaClient.invitation.create({
+            data: {
+                roleId: validatedRole?.id,
+                orgId,
+                email,
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), //7 days
+                token: hashedToken,
+            },
+        });
+        res.status(201).json({
+            message: "Invitation sent",
+            inviteLink: `http://localhost:3000/org/invite/accept?token=${rawToken}`,
+            invite,
         });
     }
-    const { role, email } = parsed.data;
-    //@ts-ignore
-    const { orgId } = req.org;
-    const validatedRole = await prismaClient.role.findFirst({
-        where: {
-            name: role,
-        },
-    });
-    if (!validatedRole) {
-        return res.json({ message: "Invalid role" });
+    catch (e) {
+        console.error("Send Invitation Error:", e);
+        res.status(500).json({ message: "Internal server error" });
     }
-    const rawToken = crypto.randomBytes(32).toString("hex");
-    const hashedToken = crypto
-        .createHash("sha256")
-        .update(rawToken)
-        .digest("hex");
-    const invite = await prismaClient.invitation.create({
-        data: {
-            roleId: validatedRole?.id,
-            orgId,
-            email,
-            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), //7 days
-            token: hashedToken,
-        },
-    });
-    res.json({
-        message: "Invitation Sent",
-        inviteLink: `http://localhost:3000/org/invite/accept?token=${rawToken}`,
-        invite,
-    });
 }
 export async function acceptEmployee(req, res) {
-    const parsed = tokenSchema.safeParse(req.query);
-    if (!parsed.success) {
-        return res.status(400).json({
-            message: "Invalid token",
-            errors: parsed.error.format(),
-        });
-    }
-    //@ts-ignore
-    const user = req.user;
-    const { token } = parsed.data;
-    //@ts-ignore
-    const usage = req.org.usage;
-    if (!token) {
-        return res.status(400).json({ message: "Token is required" });
-    }
-    if (typeof token != "string") {
-        return res.status(400).json({ message: "Token is required" });
-    }
-    const hashedToken = crypto
-        .createHash("sha256")
-        .update(token)
-        .digest("hex");
     try {
+        const parsed = tokenSchema.safeParse(req.query);
+        if (!parsed.success) {
+            return res.status(400).json({
+                message: "Invalid token",
+                errors: parsed.error.format(),
+            });
+        }
+        const { token } = parsed.data;
+        if (!token || typeof token != "string") {
+            return res.status(400).json({ message: "Token is required and must be a string" });
+        }
+        //@ts-ignore
+        const user = req.user;
+        //@ts-ignore
+        const usage = req.org.usage;
+        const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
         const invitation = await prismaClient.invitation.findFirst({
             where: {
                 token: hashedToken,
@@ -141,13 +164,13 @@ export async function acceptEmployee(req, res) {
                 count: { increment: 1 },
             },
         });
-        return res.json({
+        res.status(200).json({
             message: "You have successfully joined the organization!",
         });
     }
     catch (e) {
-        console.error(e);
-        return res.status(500).json({ message: "Something went wrong", e });
+        console.error("Accept Invitation Error:", e);
+        res.status(500).json({ message: "Internal server error" });
     }
 }
 //# sourceMappingURL=orgController.js.map
