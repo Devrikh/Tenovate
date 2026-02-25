@@ -2,7 +2,7 @@ import { Router } from "express";
 
 import authRouter from "../modules/auth/authRoutes.js";
 import orgRouter from "../modules/organizations/orgRoutes.js";
-import employeeRouter from "../modules/employees/employeeRoutes.js";
+import membershipRouter from "../modules/membership/membershipRoutes.js";
 import invitesRouter from "../modules/invitations/invitesRoutes.js";
 import projectsRouter from "../modules/projects/projectRoutes.js";
 
@@ -11,7 +11,7 @@ const router = Router();
 router.use("/auth", authRouter);
 router.use("/organizations", orgRouter);
 
-router.use("/organizations/:orgId/employees",employeeRouter);
+router.use("/organizations/:orgId/members",membershipRouter);
 // router.use("/organizations/:orgId/roles", rolesRouter);
 router.use("/organizations/:orgId/projects", projectsRouter);
 // router.use("/organizations/:orgId/features", featuresRouter);

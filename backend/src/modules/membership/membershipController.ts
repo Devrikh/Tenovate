@@ -8,11 +8,11 @@ import {
 } from "../../validators/inviteSchema.js";
 
 
-export async function fetchEmployees(req: Request, res: Response) {
+export async function fetchMembers(req: Request, res: Response) {
   try {
     //@ts-ignore
     const { orgId } = req.org;
-    const employees = await prismaClient.employment.findMany({
+    const membership = await prismaClient.membership.findMany({
       where: {
         orgId,
       },
@@ -23,8 +23,8 @@ export async function fetchEmployees(req: Request, res: Response) {
     });
 
     res.status(201).json({
-      message: "Employees Fetched",
-      employees: employees.map((emp) => {
+      message: "Members Fetched",
+      members: membership.map((emp) => {
         return {
           userId: emp.userId,
           username: emp.user.username,
@@ -33,12 +33,12 @@ export async function fetchEmployees(req: Request, res: Response) {
       }),
     });
   } catch (e) {
-    console.error("Fetching Employees Error:", e);
+    console.error("Fetching Members Error:", e);
     res.status(500).json({ message: "Internal server error" });
   }
 }
 
-export async function patchEmployeeRole(req: Request, res: Response) {
+export async function patchMemberRole(req: Request, res: Response) {
   try {
     const parsed = rolePatchSchema.safeParse(req.body);
 
@@ -63,10 +63,10 @@ export async function patchEmployeeRole(req: Request, res: Response) {
     }
 
     //@ts-ignore
-    const { employmentId } = req.employment;
-    const employee = await prismaClient.employment.update({
+    const { membershipId } = req.membership;
+    const membership = await prismaClient.membership.update({
       where: {
-        id: employmentId,
+        id: membershipId,
       },
       data: {
         roleId: validatedRole?.id,
@@ -74,19 +74,19 @@ export async function patchEmployeeRole(req: Request, res: Response) {
     });
 
     res.status(201).json({
-      message: "Employee Patched",
-      employee,
+      message: "Membership Patched",
+      membership: membership,
     });
   } catch (e) {
-    console.error("Employee Patching Error:", e);
+    console.error("Member Patching Error:", e);
     res.status(500).json({ message: "Internal server error" });
   }
 }
 
-export async function deleteEmployee(req: Request, res: Response) {
+export async function deleteMember(req: Request, res: Response) {
   try {
     //@ts-ignore
-    const { empId } = req.params;
+    const { memId } = req.params;
     //@ts-ignore
     const { orgId } = req.org;
     // //@ts-ignore
@@ -94,13 +94,13 @@ export async function deleteEmployee(req: Request, res: Response) {
     if (!orgId) {
       return res.status(401).json({ message: "Organization Id Invalid" });
     }
-    if (!empId || typeof empId != "string") {
+    if (!memId || typeof memId != "string") {
       return res.status(401).json({ message: "User Param Id Invalid" });
     }
-    const emp = await prismaClient.employment.delete({
+    const emp = await prismaClient.membership.delete({
       where: {
         userId_orgId: {
-          userId: empId,
+          userId: memId,
           orgId: orgId,
         },
       },
@@ -110,7 +110,7 @@ export async function deleteEmployee(req: Request, res: Response) {
       employee: emp,
     });
   } catch (e) {
-    console.error("Error deleting empoyment:", e);
+    console.error("Error deleting membership:", e);
     res.status(500).json({ message: "Internal server error" });
   }
 }

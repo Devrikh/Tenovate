@@ -35,7 +35,7 @@ export async function orgCreate(req: Request, res: Response) {
       console.error("Admin role not found");
       return res.status(500).json({ message: "Internal server error" });
     }
-    const employment = await prismaClient.employment.create({
+    const membership = await prismaClient.membership.create({
       data: {
         userId: userId,
         orgId: org.id,
@@ -46,7 +46,7 @@ export async function orgCreate(req: Request, res: Response) {
     res.status(201).json({
       message: "Organization created successfully",
       organization: org,
-      employment,
+      membership: membership,
     });
   } catch (e) {
     console.error("Create Organization Error:", e);
@@ -61,7 +61,7 @@ export async function fetchOrgs(req: Request, res: Response) {
     if (!userId) {
       return res.status(401).json({ message: "User not authenticated" });
     }
-    const orgs = await prismaClient.employment.findMany({
+    const orgs = await prismaClient.membership.findMany({
       where: { userId },
       include: { org: true },
     });
@@ -97,10 +97,10 @@ export async function deleteOrg(req: Request, res: Response) {
     if (!orgId) {
       return res.status(401).json({ message: "OrgId Invalid" });
     }
-    await prismaClient.employment.deleteMany({
+    await prismaClient.membership.deleteMany({
       where: { orgId: orgId },
     });
-    
+
     const org = await prismaClient.organization.delete({
       where: { id: orgId },
     });

@@ -6,7 +6,7 @@ import {
   tokenSchema,
 } from "../../validators/inviteSchema.js";
 
-export async function inviteEmployee(req: Request, res: Response) {
+export async function inviteMember(req: Request, res: Response) {
   try {
     const parsed = invitationSchema.safeParse(req.body);
 
@@ -59,7 +59,7 @@ export async function inviteEmployee(req: Request, res: Response) {
   }
 }
 
-export async function acceptEmployee(req: Request, res: Response) {
+export async function acceptMember(req: Request, res: Response) {
   try {
     const parsed = tokenSchema.safeParse(req.query);
 
@@ -99,7 +99,7 @@ export async function acceptEmployee(req: Request, res: Response) {
       });
     }
 
-    await prismaClient.employment.create({
+    await prismaClient.membership.create({
       data: {
         orgId: invitation?.orgId,
         roleId: invitation?.roleId,

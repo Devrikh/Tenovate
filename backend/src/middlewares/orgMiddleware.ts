@@ -44,7 +44,7 @@ export async function orgMiddleware(
       return res.status(404).json({ message: "Organization not found" });
     }
 
-    const employment = await prismaClient.employment.findFirst({
+    const membership = await prismaClient.membership.findFirst({
       where: {
         orgId: org.id,
         //@ts-ignore
@@ -63,19 +63,19 @@ export async function orgMiddleware(
       },
     });
 
-    if (!employment) {
+    if (!membership) {
       return res
         .status(403)
         .json({ message: "User does not belong to this organization" });
     }
 
     //@ts-ignore
-    req.employment = {
-      employmentId: employment.id,
-      roleId: employment.roleId,
-      permissions: employment.role.permissions.map((rp) => rp.permission.key),
+    req.membership = {
+      membershipId: membership.id,
+      roleId: membership.roleId,
+      permissions: membership.role.permissions.map((rp) => rp.permission.key),
     };
-    
+
     //@ts-ignore
     req.org = {
       orgId: org.id,
