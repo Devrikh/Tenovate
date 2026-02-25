@@ -6,6 +6,8 @@ import bcrypt from "bcrypt";
 
 const prisma = prismaClient;
 async function main() {
+
+  console.log("Seeding..")
   // --- Features ---
   const featureCreate = await prisma.feature.upsert({
     where: { key: "project:create" },
@@ -170,8 +172,10 @@ async function main() {
   });
 
   // --- Users ---
-  const adminPassword = await bcrypt.hash("admin123", 10);
-  const memberPassword = await bcrypt.hash("member123", 10);
+  const adminPassword = await bcrypt.hash("Admin123", 10);
+  const memberPassword = await bcrypt.hash("Member123", 10);
+  const ownerPassword = await bcrypt.hash("Owner123", 10);
+  const moderatorPassword = await bcrypt.hash("Moderator123", 10);
 
   const adminUser = await prisma.user.upsert({
     where: { email: "admin@example.com" },
@@ -193,9 +197,31 @@ async function main() {
     },
   });
 
+  const ownerUser = await prisma.user.upsert({
+    where: { email: "owner@example.com" },
+    update: {},
+    create: {
+      username: "owner",
+      email: "owner@example.com",
+      password: ownerPassword,
+    },
+  });
+
+  const moderatorUser = await prisma.user.upsert({
+    where: { email: "moderator@example.com" },
+    update: {},
+    create: {
+      username: "moderator",
+      email: "moderator@example.com",
+      password: moderatorPassword,
+    },
+  });
+
   // --- Employment ---
   const adminRole = roles.get("ADMIN");
   const memberRole = roles.get("MEMBER");
+  const ownerRole = roles.get("OWNER");
+  const moderatorRole = roles.get("MODERATOR");
 
   if (adminRole) {
     await prisma.membership.upsert({
@@ -213,8 +239,25 @@ async function main() {
     });
   }
 
+   if (moderatorRole) {
+    await prisma.membership.upsert({
+      where: { userId_orgId: { userId: moderatorUser.id, orgId: org.id } },
+      update: {},
+      create: { userId: moderatorUser.id, orgId: org.id, roleId: moderatorRole.id },
+    });
+  }
+
+   if (ownerRole) {
+    await prisma.membership.upsert({
+      where: { userId_orgId: { userId: ownerUser.id, orgId: org.id } },
+      update: {},
+      create: { userId: ownerUser.id, orgId: org.id, roleId: ownerRole.id },
+    });
+  }
+
+
   console.log(
-    "Seed complete : 1 org, 2 users, 3 roles, permissions, plans, features",
+    "Seed complete : 1 org, 4 users, 4 roles, permissions, plans, features",
   );
 }
 

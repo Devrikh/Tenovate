@@ -1,0 +1,105 @@
+import { prismaClient } from "../../lib/prisma/prisma.js";
+import crypto from "crypto";
+import { orgCreateSchema, rolePatchSchema } from "../../validators/orgScema.js";
+import { invitationSchema, tokenSchema, } from "../../validators/inviteSchema.js";
+export async function fetchMembers(req, res) {
+    try {
+        //@ts-ignore
+        const { orgId } = req.org;
+        const membership = await prismaClient.membership.findMany({
+            where: {
+                orgId,
+            },
+            include: {
+                user: true,
+                role: true,
+            },
+        });
+        res.status(201).json({
+            message: "Members Fetched",
+            members: membership.map((emp) => {
+                return {
+                    userId: emp.userId,
+                    username: emp.user.username,
+                    roleName: emp.role.name,
+                };
+            }),
+        });
+    }
+    catch (e) {
+        console.error("Fetching Members Error:", e);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+export async function patchMemberRole(req, res) {
+    try {
+        const parsed = rolePatchSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({
+                message: "Invalid token",
+                errors: parsed.error.format(),
+            });
+        }
+        const { roleName } = parsed.data;
+        //@ts-ignore
+        const validatedRole = await prismaClient.role.findUnique({
+            where: {
+                name: roleName,
+            },
+        });
+        if (!validatedRole) {
+            return res.status(400).json({ message: "Invalid role" });
+        }
+        //@ts-ignore
+        const { membershipId } = req.membership;
+        const membership = await prismaClient.membership.update({
+            where: {
+                id: membershipId,
+            },
+            data: {
+                roleId: validatedRole?.id,
+            },
+        });
+        res.status(201).json({
+            message: "Membership Patched",
+            membership: membership,
+        });
+    }
+    catch (e) {
+        console.error("Member Patching Error:", e);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+export async function deleteMember(req, res) {
+    try {
+        //@ts-ignore
+        const { memId } = req.params;
+        //@ts-ignore
+        const { orgId } = req.org;
+        // //@ts-ignore
+        // const empId=req.employment.employmentId;
+        if (!orgId) {
+            return res.status(401).json({ message: "Organization Id Invalid" });
+        }
+        if (!memId || typeof memId != "string") {
+            return res.status(401).json({ message: "User Param Id Invalid" });
+        }
+        const emp = await prismaClient.membership.delete({
+            where: {
+                userId_orgId: {
+                    userId: memId,
+                    orgId: orgId,
+                },
+            },
+        });
+        res.status(201).json({
+            message: "Employee deleted successfully",
+            employee: emp,
+        });
+    }
+    catch (e) {
+        console.error("Error deleting membership:", e);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+//# sourceMappingURL=membershipController.js.map

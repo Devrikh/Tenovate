@@ -10,6 +10,6 @@ import { authMiddleware } from "../../middlewares/authMiddleware.js";
 const router = Router();
 router.post("/signup", signUp);
 router.post("/login", login);
-router.post("/me", authMiddleware, userDetails);
+router.get("/me", authMiddleware, userDetails);
 export default router;
 //# sourceMappingURL=authRoutes.js.map

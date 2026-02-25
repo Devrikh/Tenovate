@@ -1,7 +1,7 @@
 import { prismaClient } from "../../lib/prisma/prisma.js";
 import crypto from "crypto";
 import { invitationSchema, tokenSchema, } from "../../validators/inviteSchema.js";
-export async function inviteEmployee(req, res) {
+export async function inviteMember(req, res) {
     try {
         const parsed = invitationSchema.safeParse(req.body);
         if (!parsed.success) {
@@ -46,7 +46,7 @@ export async function inviteEmployee(req, res) {
         res.status(500).json({ message: "Internal server error" });
     }
 }
-export async function acceptEmployee(req, res) {
+export async function acceptMember(req, res) {
     try {
         const parsed = tokenSchema.safeParse(req.query);
         if (!parsed.success) {
@@ -78,7 +78,7 @@ export async function acceptEmployee(req, res) {
                 message: "This invite is not valid for your email",
             });
         }
-        await prismaClient.employment.create({
+        await prismaClient.membership.create({
             data: {
                 orgId: invitation?.orgId,
                 roleId: invitation?.roleId,

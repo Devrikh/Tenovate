@@ -27,19 +27,19 @@ export async function orgCreate(req: Request, res: Response) {
       },
     });
 
-    const adminRole = await prismaClient.role.findFirst({
-      where: { name: "ADMIN" },
+    const ownerRole = await prismaClient.role.findFirst({
+      where: { name: "OWNER" },
     });
 
-    if (!adminRole) {
-      console.error("Admin role not found");
+    if (!ownerRole) {
+      console.error("Owner role not found");
       return res.status(500).json({ message: "Internal server error" });
     }
     const membership = await prismaClient.membership.create({
       data: {
         userId: userId,
         orgId: org.id,
-        roleId: adminRole?.id,
+        roleId: ownerRole?.id,
       },
     });
 
@@ -92,7 +92,7 @@ export async function fetchOrg(req: Request, res: Response) {
 export async function deleteOrg(req: Request, res: Response) {
   try {
     //@ts-ignore
-    const orgId = req.org.orgId;
+    const {orgId} = req.org;
 
     if (!orgId) {
       return res.status(401).json({ message: "OrgId Invalid" });

@@ -1,7 +1,5 @@
 import { prismaClient } from "../../lib/prisma/prisma.js";
-import crypto from "crypto";
-import { orgCreateSchema, rolePatchSchema } from "../../validators/orgScema.js";
-import { invitationSchema, tokenSchema, } from "../../validators/inviteSchema.js";
+import { orgCreateSchema } from "../../validators/orgScema.js";
 export async function orgCreate(req, res) {
     try {
         const parsed = orgCreateSchema.safeParse(req.body);
@@ -23,24 +21,24 @@ export async function orgCreate(req, res) {
                 planId,
             },
         });
-        const adminRole = await prismaClient.role.findFirst({
-            where: { name: "Admin" },
+        const ownerRole = await prismaClient.role.findFirst({
+            where: { name: "OWNER" },
         });
-        if (!adminRole) {
-            console.error("Admin role not found");
+        if (!ownerRole) {
+            console.error("Owner role not found");
             return res.status(500).json({ message: "Internal server error" });
         }
-        const employment = await prismaClient.employment.create({
+        const membership = await prismaClient.membership.create({
             data: {
                 userId: userId,
                 orgId: org.id,
-                roleId: adminRole?.id,
+                roleId: ownerRole?.id,
             },
         });
         res.status(201).json({
             message: "Organization created successfully",
             organization: org,
-            employment,
+            membership: membership,
         });
     }
     catch (e) {
@@ -55,7 +53,7 @@ export async function fetchOrgs(req, res) {
         if (!userId) {
             return res.status(401).json({ message: "User not authenticated" });
         }
-        const orgs = await prismaClient.employment.findMany({
+        const orgs = await prismaClient.membership.findMany({
             where: { userId },
             include: { org: true },
         });
@@ -70,9 +68,6 @@ export async function fetchOrg(req, res) {
     try {
         //@ts-ignore
         const orgId = req.org.orgId;
-        if (!orgId) {
-            return res.status(401).json({ message: "OrgId Invalid" });
-        }
         const org = await prismaClient.organization.findUnique({
             where: { id: orgId },
         });
@@ -86,13 +81,11 @@ export async function fetchOrg(req, res) {
 export async function deleteOrg(req, res) {
     try {
         //@ts-ignore
-        const orgId = req.org.orgId;
-        //@ts-ignore
-        const empId = req.employment.employmentId;
+        const { orgId } = req.org;
         if (!orgId) {
             return res.status(401).json({ message: "OrgId Invalid" });
         }
-        await prismaClient.employment.deleteMany({
+        await prismaClient.membership.deleteMany({
             where: { orgId: orgId },
         });
         const org = await prismaClient.organization.delete({

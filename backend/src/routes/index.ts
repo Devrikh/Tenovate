@@ -13,12 +13,12 @@ router.use("/organizations", orgRouter);
 
 router.use("/organizations/:orgId/members",membershipRouter);
 // router.use("/organizations/:orgId/roles", rolesRouter);
-router.use("/organizations/:orgId/projects", projectsRouter);
+// router.use("/organizations/:orgId/projects", projectsRouter);
 // router.use("/organizations/:orgId/features", featuresRouter);
 // router.use("/organizations/:orgId/usage", usageRouter);
 // router.use("/organizations/:orgId/audit-logs", auditRouter);
-router.use("/organizations/:orgId/invitations", invitesRouter);
+// router.use("/organizations/:orgId/invitations", invitesRouter);
 
-router.use("/invitations", invitesRouter);
+// router.use("/invitations", invitesRouter);
 
 export default router;
