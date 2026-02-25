@@ -7,20 +7,22 @@ export async function orgMiddleware(
   next: NextFunction,
 ) {
   try {
-    const orgId = req.headers["x-org-id"];
+    const {orgId} = req.params;
     if (!orgId) {
-      return res.status(400).json({ message: "Missing orgId header" });
+      return res.status(400).json({ message: "Missing orgId" });
     }
 
     if (typeof orgId !== "string") {
       return res.status(400).json({ message: "orgId must be a string" });
     }
-    //@ts-ignore
+
+     //@ts-ignore
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "User not authenticated" });
     }
 
+   
     const org = await prismaClient.organization.findFirst({
       where: {
         id: orgId,
@@ -39,12 +41,12 @@ export async function orgMiddleware(
     });
 
     if (!org) {
-      return res.status(403).json({ message: "Invalid orgId" });
+      return res.status(404).json({ message: "Organization not found" });
     }
 
     const employment = await prismaClient.employment.findFirst({
       where: {
-        orgId: orgId,
+        orgId: org.id,
         //@ts-ignore
         userId: userId,
       },
@@ -69,9 +71,11 @@ export async function orgMiddleware(
 
     //@ts-ignore
     req.employment = {
+      employmentId: employment.id,
       roleId: employment.roleId,
       permissions: employment.role.permissions.map((rp) => rp.permission.key),
     };
+    
     //@ts-ignore
     req.org = {
       orgId: org.id,

@@ -1,4 +1,4 @@
-import { prismaClient } from "../lib/prisma.js";
+import { prismaClient } from "../lib/prisma/prisma.js";
 export function checkUsageLimit(featureKey) {
     return async (req, res, next) => {
         try {
@@ -25,7 +25,8 @@ export function checkUsageLimit(featureKey) {
             if (!feature) {
                 return res.status(403).json({ message: "Feature not available" });
             }
-            if (feature.limit && usage.count >= feature.limit) {
+            if ((feature.limit && usage.count >= feature.limit) ||
+                feature.limit != null) {
                 return res.status(403).json({ message: "Feature usage limit reached" });
             }
             //@ts-ignore

@@ -1,9 +1,9 @@
 import type { Request, Response } from "express";
-import { prismaClient } from "../lib/prisma/prisma.js";
+import { prismaClient } from "../../lib/prisma/prisma.js";
 import {
   createProjectSchema,
   deleteProjectSchema,
-} from "../validators/projectSchema.js";
+} from "../../validators/projectSchema.js";
 
 export async function fetchProjects(req: Request, res: Response) {
   try {

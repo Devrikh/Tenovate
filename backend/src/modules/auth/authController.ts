@@ -1,8 +1,11 @@
 import bcrypt from "bcrypt";
-import { prismaClient } from "../lib/prisma/prisma.js";
+import { prismaClient } from "../../lib/prisma/prisma.js";
 import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { userLoginSchema, userSignupSchema } from "../validators/authSchema.js";
+import {
+  userLoginSchema,
+  userSignupSchema,
+} from "../../validators/authSchema.js";
 
 export async function signUp(req: Request, res: Response) {
   try {
@@ -80,6 +83,33 @@ export async function login(req: Request, res: Response) {
     });
   } catch (e) {
     console.error("Login Error:", e);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function userDetails(req: Request, res: Response) {
+  try {
+    //@ts-ignore
+    const userId = req.user.id;
+
+    const user = await prismaClient.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      return res
+        .status(409)
+        .json({ message: "User not found, please register !" });
+    }
+
+    res.status(200).json({
+      message: "User details",
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+      },
+    });
+  } catch (e) {
+    console.error("User Details Error:", e);
     res.status(500).json({ message: "Internal server error" });
   }
 }

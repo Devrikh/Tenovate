@@ -1,9 +1,9 @@
-import { prismaClient } from "../lib/prisma.js";
+import { prismaClient } from "../lib/prisma/prisma.js";
 export async function orgMiddleware(req, res, next) {
     try {
-        const orgId = req.headers["x-org-id"];
+        const { orgId } = req.params;
         if (!orgId) {
-            return res.status(400).json({ message: "Missing orgId header" });
+            return res.status(400).json({ message: "Missing orgId" });
         }
         if (typeof orgId !== "string") {
             return res.status(400).json({ message: "orgId must be a string" });
@@ -30,11 +30,11 @@ export async function orgMiddleware(req, res, next) {
             },
         });
         if (!org) {
-            return res.status(403).json({ message: "Invalid orgId" });
+            return res.status(404).json({ message: "Organization not found" });
         }
         const employment = await prismaClient.employment.findFirst({
             where: {
-                orgId: orgId,
+                orgId: org.id,
                 //@ts-ignore
                 userId: userId,
             },
@@ -57,6 +57,7 @@ export async function orgMiddleware(req, res, next) {
         }
         //@ts-ignore
         req.employment = {
+            employmentId: employment.id,
             roleId: employment.roleId,
             permissions: employment.role.permissions.map((rp) => rp.permission.key),
         };
@@ -68,8 +69,6 @@ export async function orgMiddleware(req, res, next) {
                 limit: pf.limit,
             })),
         };
-        //@ts-ignore
-        console.log("Organization middleware:", req.org, req.employment);
         next();
     }
     catch (e) {

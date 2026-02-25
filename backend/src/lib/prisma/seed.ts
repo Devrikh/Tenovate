@@ -1,5 +1,7 @@
 import type { Permission, Role } from "@prisma/client";
-import { prismaClient } from "./prisma.js";
+import { PrismaClient } from "@prisma/client";
+
+export const prismaClient = new PrismaClient();
 import bcrypt from "bcrypt"
 
 
@@ -41,12 +43,12 @@ async function main() {
   // --- Plan Features ---
   await prisma.planFeature.createMany({
     data: [
-      { planId: planFree.id, featureId: featureCreate.id, limit: 1 },
-      { planId: planFree.id, featureId: featureInvite.id, limit: 1 },
+      { planId: planFree.id, featureId: featureCreate.id, limit: 3 },
+      { planId: planFree.id, featureId: featureInvite.id, limit: 2 },
       { planId: planPro.id, featureId: featureCreate.id, limit: 10 },
       { planId: planPro.id, featureId: featureInvite.id, limit: 10 },
-      { planId: planMythic.id, featureId: featureCreate.id, limit: 100 },
-      { planId: planMythic.id, featureId: featureInvite.id, limit: 100 },
+      { planId: planMythic.id, featureId: featureCreate.id, limit: 50 },
+      { planId: planMythic.id, featureId: featureInvite.id, limit: null },
     ],
     skipDuplicates: true,
   });

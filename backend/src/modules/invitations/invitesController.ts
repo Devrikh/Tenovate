@@ -1,79 +1,10 @@
 import type { Request, Response } from "express";
-import { prismaClient } from "../lib/prisma/prisma.js";
+import { prismaClient } from "../../lib/prisma/prisma.js";
 import crypto from "crypto";
-import { orgCreateSchema } from "../validators/orgScema.js";
-import { invitationSchema, tokenSchema } from "../validators/inviteSchema.js";
-
-export async function orgCreate(req: Request, res: Response) {
-  try {
-    const parsed = orgCreateSchema.safeParse(req.body);
-
-    if (!parsed.success) {
-      return res.status(400).json({
-        message: "Invalid input",
-        errors: parsed.error.format(),
-      });
-    }
-    const { orgName, planId } = parsed.data;
-
-    //@ts-ignore
-    const userId = req.user.id;
-    if (!userId) {
-      return res.status(401).json({ message: "User not authenticated" });
-    }
-
-    const org = await prismaClient.organization.create({
-      data: {
-        name: orgName,
-        planId,
-      },
-    });
-
-    const adminRole = await prismaClient.role.findFirst({
-      where: { name: "Admin" },
-    });
-
-    if (!adminRole) {
-      console.error("Admin role not found");
-      return res.status(500).json({ message: "Internal server error" });
-    }
-    const employment = await prismaClient.employment.create({
-      data: {
-        userId: userId,
-        orgId: org.id,
-        roleId: adminRole?.id,
-      },
-    });
-
-    res.status(201).json({
-      message: "Organization created successfully",
-      organization: org,
-      employment,
-    });
-  } catch (e) {
-    console.error("Create Organization Error:", e);
-    res.status(500).json({ message: "Internal server error" });
-  }
-}
-
-export async function fetchOrg(req: Request, res: Response) {
-  try {
-    //@ts-ignore
-    const userId = req.user.id;
-    if (!userId) {
-      return res.status(401).json({ message: "User not authenticated" });
-    }
-    const orgs = await prismaClient.employment.findMany({
-      where: { userId },
-      include: { org: true },
-    });
-
-    res.status(200).json({ organizations: orgs });
-  } catch (e) {
-    console.error("Error fetching user organizations:", e);
-    res.status(500).json({ message: "Internal server error" });
-  }
-}
+import {
+  invitationSchema,
+  tokenSchema,
+} from "../../validators/inviteSchema.js";
 
 export async function inviteEmployee(req: Request, res: Response) {
   try {
