@@ -2,9 +2,10 @@ export function requirePermission(permission) {
     return (req, res, next) => {
         try {
             //@ts-ignore
-            const permissions = req.employment?.permissions;
+            const permissions = req.membership?.permissions;
+            //@ts-ignore
             if (!permissions) {
-                return res.status(401).json({ message: "User employment not found" });
+                return res.status(401).json({ message: "User membership not found" });
             }
             if (!permissions.includes(permission)) {
                 return res.status(403).json({ message: "Permission denied" });

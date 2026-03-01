@@ -30,9 +30,9 @@ export function checkUsageLimit(featureKey: string) {
       if (!feature) {
         return res.status(403).json({ message: "Feature not available" });
       }
+      console.log(usage.count, feature.limit)
       if (
-        (feature.limit && usage.count >= feature.limit) ||
-        feature.limit != null
+        (feature.limit && usage.count >= feature.limit)
       ) {
         return res.status(403).json({ message: "Feature usage limit reached" });
       }

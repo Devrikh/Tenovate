@@ -7,6 +7,7 @@ export declare const invitationSchema: z.ZodObject<{
     role: z.ZodEnum<{
         MEMBER: "MEMBER";
         ADMIN: "ADMIN";
+        MODERATOR: "MODERATOR";
     }>;
 }, z.core.$strip>;
 //# sourceMappingURL=inviteSchema.d.ts.map

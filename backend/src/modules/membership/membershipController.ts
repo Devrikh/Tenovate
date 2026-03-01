@@ -40,33 +40,37 @@ export async function fetchMembers(req: Request, res: Response) {
 
 export async function patchMemberRole(req: Request, res: Response) {
   try {
-    const parsed = rolePatchSchema.safeParse(req.body);
-
+    const parsed = rolePatchSchema.safeParse(req.body);    
     if (!parsed.success) {
       return res.status(400).json({
         message: "Invalid token",
         errors: parsed.error.format(),
       });
     }
-
     const { roleName } = parsed.data;
     //@ts-ignore
-
+    
     const validatedRole = await prismaClient.role.findUnique({
       where: {
         name: roleName,
       },
     });
-
+    
     if (!validatedRole) {
       return res.status(400).json({ message: "Invalid role" });
     }
+    
+    const {userId} = req.params;
 
+    if (!userId || typeof userId != "string") {
+      return res.status(400).json({ message: "Invalid userId parameter" });
+    }
     //@ts-ignore
-    const { membershipId } = req.membership;
+    // const { membershipId } = req.membership;
     const membership = await prismaClient.membership.update({
       where: {
-        id: membershipId,
+        //@ts-ignore
+        userId_orgId: {userId: userId, orgId: req.org?.orgId },
       },
       data: {
         roleId: validatedRole?.id,
@@ -86,7 +90,7 @@ export async function patchMemberRole(req: Request, res: Response) {
 export async function deleteMember(req: Request, res: Response) {
   try {
     //@ts-ignore
-    const { memId } = req.params;
+    const { userId } = req.params;
     //@ts-ignore
     const { orgId } = req.org;
     // //@ts-ignore
@@ -94,19 +98,19 @@ export async function deleteMember(req: Request, res: Response) {
     if (!orgId) {
       return res.status(401).json({ message: "Organization Id Invalid" });
     }
-    if (!memId || typeof memId != "string") {
+    if (!userId || typeof userId != "string") {
       return res.status(401).json({ message: "User Param Id Invalid" });
     }
     const emp = await prismaClient.membership.delete({
       where: {
         userId_orgId: {
-          userId: memId,
+          userId: userId,
           orgId: orgId,
         },
       },
     });
     res.status(201).json({
-      message: "Employee deleted successfully",
+      message: "Member deleted successfully",
       employee: emp,
     });
   } catch (e) {

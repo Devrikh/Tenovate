@@ -4,6 +4,7 @@ import authRouter from "../modules/auth/authRoutes.js";
 import orgRouter from "../modules/organizations/orgRoutes.js";
 import membershipRouter from "../modules/membership/membershipRoutes.js";
 import invitesRouter from "../modules/invitations/invitesRoutes.js";
+import invitesResponseRouter from "../modules/invitations/invitesReponseRouter.js";
 import projectsRouter from "../modules/projects/projectRoutes.js";
 
 const router = Router();
@@ -17,8 +18,8 @@ router.use("/organizations/:orgId/members",membershipRouter);
 // router.use("/organizations/:orgId/features", featuresRouter);
 // router.use("/organizations/:orgId/usage", usageRouter);
 // router.use("/organizations/:orgId/audit-logs", auditRouter);
-// router.use("/organizations/:orgId/invitations", invitesRouter);
+router.use("/organizations/:orgId/invitations", invitesRouter);
 
-// router.use("/invitations", invitesRouter);
+router.use("/invitations", invitesResponseRouter);
 
 export default router;

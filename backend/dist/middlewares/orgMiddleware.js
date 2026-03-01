@@ -2,6 +2,7 @@ import { prismaClient } from "../lib/prisma/prisma.js";
 export async function orgMiddleware(req, res, next) {
     try {
         const { orgId } = req.params;
+        console.log(orgId);
         if (!orgId) {
             return res.status(400).json({ message: "Missing orgId" });
         }

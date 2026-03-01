@@ -2,6 +2,7 @@ import { Router } from "express";
 import { orgMiddleware } from "../../middlewares/orgMiddleware.js";
 import { deleteMember, fetchMembers, patchMemberRole } from "./membershipController.js";
 import { requirePermission } from "../../middlewares/permissionMiddleware.js";
+import { authMiddleware } from "../../middlewares/authMiddleware.js";
 
   // /:orgId/employees
   //   GET    /              → list employees
@@ -9,7 +10,8 @@ import { requirePermission } from "../../middlewares/permissionMiddleware.js";
   //   DELETE /:userId       → remove employees
 
 
-const router=Router()
+const router=Router({mergeParams: true})
+router.use(authMiddleware);
 
 router.get("/", orgMiddleware,requirePermission("member:read"),fetchMembers);
 router.patch(
@@ -18,6 +20,6 @@ router.patch(
   requirePermission("member:update_role"),
   patchMemberRole,
 );
-router.delete(":userId", orgMiddleware,requirePermission("member:remove"),deleteMember);
+router.delete("/:userId", orgMiddleware,requirePermission("member:remove"),deleteMember);
 
 export default router;

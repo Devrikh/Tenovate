@@ -11,6 +11,6 @@ export const invitationSchema = z.object({
         .trim()
         .toLowerCase()
         .email("Invalid email address"),
-    role: z.enum(["MEMBER", "ADMIN"])
+    role: z.enum(["MEMBER", "ADMIN", "MODERATOR"])
 });
 //# sourceMappingURL=inviteSchema.js.map

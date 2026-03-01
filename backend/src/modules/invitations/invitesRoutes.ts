@@ -3,7 +3,8 @@ import { orgMiddleware } from "../../middlewares/orgMiddleware.js";
 import { requirePermission } from "../../middlewares/permissionMiddleware.js";
 import { requireFeature } from "../../middlewares/featureMiddleware.js";
 import { checkUsageLimit } from "../../middlewares/usageMiddleware.js";
-import { acceptMember, inviteMember } from "../invitations/invitesController.js";
+import { acceptMember, inviteMember, listInvites } from "../invitations/invitesController.js";
+import { authMiddleware } from "../../middlewares/authMiddleware.js";
 
 //   /:orgId/invitations
 //     POST   /invite
@@ -14,7 +15,8 @@ import { acceptMember, inviteMember } from "../invitations/invitesController.js"
 
 
 
-const router=Router()
+const router=Router({mergeParams: true})
+router.use(authMiddleware)
 
 router.post(
   "/invite",
@@ -24,11 +26,6 @@ router.post(
   checkUsageLimit("member:invite"),
   inviteMember,
 );
-// router.get("/", listInvites);
-
-router.post(
-  "/accept",
-  acceptMember,
-);
+router.get("/", orgMiddleware, requirePermission("member:read"),listInvites);
 
 export default router;

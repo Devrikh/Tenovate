@@ -15,5 +15,5 @@ export const invitationSchema = z.object({
     .toLowerCase()
     .email("Invalid email address"),
 
-  role: z.enum(["MEMBER", "ADMIN"] as const)
+  role: z.enum(["MEMBER", "ADMIN", "MODERATOR"] as const)
 });
