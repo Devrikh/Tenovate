@@ -7,7 +7,6 @@ import {
   tokenSchema,
 } from "../../validators/inviteSchema.js";
 
-
 export async function fetchMembers(req: Request, res: Response) {
   try {
     //@ts-ignore
@@ -40,7 +39,7 @@ export async function fetchMembers(req: Request, res: Response) {
 
 export async function patchMemberRole(req: Request, res: Response) {
   try {
-    const parsed = rolePatchSchema.safeParse(req.body);    
+    const parsed = rolePatchSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({
         message: "Invalid token",
@@ -49,18 +48,18 @@ export async function patchMemberRole(req: Request, res: Response) {
     }
     const { roleName } = parsed.data;
     //@ts-ignore
-    
+
     const validatedRole = await prismaClient.role.findUnique({
       where: {
         name: roleName,
       },
     });
-    
+
     if (!validatedRole) {
       return res.status(400).json({ message: "Invalid role" });
     }
-    
-    const {userId} = req.params;
+
+    const { userId } = req.params;
 
     if (!userId || typeof userId != "string") {
       return res.status(400).json({ message: "Invalid userId parameter" });
@@ -70,10 +69,20 @@ export async function patchMemberRole(req: Request, res: Response) {
     const membership = await prismaClient.membership.update({
       where: {
         //@ts-ignore
-        userId_orgId: {userId: userId, orgId: req.org?.orgId },
+        userId_orgId: { userId: userId, orgId: req.org?.orgId },
       },
       data: {
         roleId: validatedRole?.id,
+      },
+    });
+
+    await prismaClient.auditLog.create({
+      data: {
+        //@ts-ignore
+        userId: req.user.id,
+        //@ts-ignore
+        orgId: req.org.orgId,
+        action: "member:update_role",
       },
     });
 
@@ -109,6 +118,16 @@ export async function deleteMember(req: Request, res: Response) {
         },
       },
     });
+     await prismaClient.auditLog.create({
+      data: {
+        //@ts-ignore
+        userId: req.user.id,
+        //@ts-ignore
+        orgId: req.org.orgId,
+        action: "member:remove",
+      },
+    });
+
     res.status(201).json({
       message: "Member deleted successfully",
       employee: emp,

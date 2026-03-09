@@ -29,6 +29,13 @@ export async function signUp(req: Request, res: Response) {
       },
     });
 
+    await prismaClient.auditLog.create({
+  data: {
+    userId: user.id,  
+    action: "user:registered",
+  },
+});
+
     res.json({
       message: "User Created",
       user: { id: user.id, email: user.email, username: user.username },

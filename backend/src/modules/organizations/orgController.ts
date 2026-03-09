@@ -43,6 +43,22 @@ export async function orgCreate(req: Request, res: Response) {
       },
     });
 
+    await prismaClient.auditLog.create({
+  data: {
+    userId: userId,
+    orgId: org.id,           
+    action: "org:created", 
+  },
+});
+
+await prismaClient.auditLog.create({
+  data: {
+    userId: userId,
+    orgId: org.id,           
+    action: "membership:added", 
+  },
+});
+
     res.status(201).json({
       message: "Organization created successfully",
       organization: org,
@@ -92,6 +108,8 @@ export async function fetchOrg(req: Request, res: Response) {
 export async function deleteOrg(req: Request, res: Response) {
   try {
     //@ts-ignore
+    const userId = req.user.id;
+    //@ts-ignore
     const {orgId} = req.org;
 
     if (!orgId) {
@@ -105,6 +123,15 @@ export async function deleteOrg(req: Request, res: Response) {
       where: { id: orgId },
     });
 
+    await prismaClient.auditLog.create({
+  data: {
+    userId: userId,
+    orgId: org.id,          
+    action: "org:deleted", 
+  },
+
+  
+});
     res.status(201).json({
       message: "Organization deleted successfully",
       organization: org,

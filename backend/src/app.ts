@@ -17,7 +17,6 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// --- Mount API v1 Routes ---
 app.use("/api/v1", apiRouter);
 
 

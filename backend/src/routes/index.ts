@@ -5,7 +5,11 @@ import orgRouter from "../modules/organizations/orgRoutes.js";
 import membershipRouter from "../modules/membership/membershipRoutes.js";
 import invitesRouter from "../modules/invitations/invitesRoutes.js";
 import invitesResponseRouter from "../modules/invitations/invitesReponseRouter.js";
+import rolesRouter from "../modules/roles/roleRoutes.js";
 import projectsRouter from "../modules/projects/projectRoutes.js";
+import featuresRouter from "../modules/features/featureRoutes.js"
+import usageRouter from "../modules/usage/usageRoutes.js"
+import auditRouter from "../modules/audit/auditRoutes.js"
 
 const router = Router();
 
@@ -13,11 +17,11 @@ router.use("/auth", authRouter);
 router.use("/organizations", orgRouter);
 
 router.use("/organizations/:orgId/members",membershipRouter);
-// router.use("/organizations/:orgId/roles", rolesRouter);
-// router.use("/organizations/:orgId/projects", projectsRouter);
-// router.use("/organizations/:orgId/features", featuresRouter);
-// router.use("/organizations/:orgId/usage", usageRouter);
-// router.use("/organizations/:orgId/audit-logs", auditRouter);
+router.use("/organizations/:orgId/roles", rolesRouter);
+router.use("/organizations/:orgId/projects", projectsRouter);
+router.use("/organizations/:orgId/features", featuresRouter);
+router.use("/organizations/:orgId/usage", usageRouter);
+router.use("/organizations/:orgId/audit-logs", auditRouter);
 router.use("/organizations/:orgId/invitations", invitesRouter);
 
 router.use("/invitations", invitesResponseRouter);

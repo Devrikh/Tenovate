@@ -48,9 +48,20 @@ export async function inviteMember(req: Request, res: Response) {
       },
     });
 
+
+     await prismaClient.auditLog.create({
+      data: {
+        //@ts-ignore
+        userId: req.user.id,
+        //@ts-ignore
+        orgId: req.org.orgId,
+        action: "member:invited",
+      },
+    });
+
     res.status(201).json({
       message: "Invitation sent",
-      inviteLink: `http://localhost:3000/org/invite/accept?token=${rawToken}`,
+      inviteLink: `http://localhost:3000/api/v1/invitations/accept?token=${rawToken}`,
       invite,
     });
   } catch (e) {
@@ -157,6 +168,26 @@ export async function acceptMember(req: Request, res: Response) {
       },
     });
 
+      await prismaClient.auditLog.create({
+      data: {
+        //@ts-ignore
+        userId: req.user.id,
+        //@ts-ignore
+        orgId: req.org.orgId,
+        action: "invite:accepted",
+      },
+    });
+    await prismaClient.auditLog.create({
+      data: {
+        //@ts-ignore
+        userId: req.user.id,
+        //@ts-ignore
+        orgId: req.org.orgId,
+        action: "membership:added",
+      },
+    });
+    
+
     res.status(200).json({
       message: "You have successfully joined the organization!",
     });
@@ -214,7 +245,15 @@ export async function declineMember(req: Request, res: Response) {
       },
     });
 
-
+await prismaClient.auditLog.create({
+      data: {
+        //@ts-ignore
+        userId: user.id,
+        //@ts-ignore
+        orgId: invitation.orgId,
+        action: "invite:declined",
+      },
+    });
 
     res.status(200).json({
       message: "You have successfully declined the invite!",

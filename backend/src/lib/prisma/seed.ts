@@ -48,7 +48,7 @@ async function main() {
       { planId: planPro.id, featureId: featureCreate.id, limit: 10 },
       { planId: planPro.id, featureId: featureInvite.id, limit: 10 },
       { planId: planMythic.id, featureId: featureCreate.id, limit: 50 },
-      { planId: planMythic.id, featureId: featureInvite.id, limit: null },
+      { planId: planMythic.id, featureId: featureInvite.id, limit: 100 },
     ],
     skipDuplicates: true,
   });
@@ -168,7 +168,7 @@ async function main() {
   const org = await prisma.organization.upsert({
     where: { name: "ExampleOrg" },
     update: {},
-    create: { name: "ExampleOrg", planId: planFree.id },
+    create: { name: "ExampleOrg", planId: planMythic.id },
   });
 
   // --- Users ---

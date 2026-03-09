@@ -1,5 +1,5 @@
 import { prismaClient } from "../../lib/prisma/prisma.js";
-import { createProjectSchema, deleteProjectSchema, } from "../../validators/projectSchema.js";
+import { createProjectSchema, deleteProjectSchema, fetchProjectSchema, patchProjectSchema, } from "../../validators/projectSchema.js";
 export async function fetchProjects(req, res) {
     try {
         //@ts-ignore
@@ -16,6 +16,72 @@ export async function fetchProjects(req, res) {
     }
     catch (e) {
         console.error("Fetch Projects Error:", e);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+export async function fetchProject(req, res) {
+    try {
+        const parsed = fetchProjectSchema.safeParse(req.params);
+        if (!parsed.success) {
+            return res.status(400).json({
+                message: "Invalid token",
+                errors: parsed.error.format(),
+            });
+        }
+        const { projectId } = parsed.data;
+        //@ts-ignore
+        const userId = req.user.id;
+        //@ts-ignore
+        const { orgId } = req.org;
+        //@ts-ignore
+        const usage = req.org.usage;
+        const project = await prismaClient.project.findUnique({
+            where: {
+                id: projectId
+            },
+        });
+        res.status(201).json({ message: "Project Fetched", project });
+    }
+    catch (e) {
+        console.error("Fetch Project Error:", e);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+export async function patchProject(req, res) {
+    try {
+        const parsedProjId = fetchProjectSchema.safeParse(req.params);
+        const parsedProjName = patchProjectSchema.safeParse(req.body);
+        if (!parsedProjId.success) {
+            return res.status(400).json({
+                message: "Invalid token",
+                errors: parsedProjId.error.format(),
+            });
+        }
+        if (!parsedProjName.success) {
+            return res.status(400).json({
+                message: "Invalid token",
+                errors: parsedProjName.error.format(),
+            });
+        }
+        const { projectId } = parsedProjId.data;
+        const { name } = parsedProjName.data;
+        // //@ts-ignore
+        // const userId = req.user.id;
+        // //@ts-ignore
+        // const { orgId } = req.org;
+        // //@ts-ignore
+        // const usage = req.org.usage;
+        const project = await prismaClient.project.update({
+            where: {
+                id: projectId
+            }, data: {
+                name: name
+            }
+        });
+        res.status(201).json({ message: "Project Patched", project });
+    }
+    catch (e) {
+        console.error("Patch Project Error:", e);
         res.status(500).json({ message: "Internal server error" });
     }
 }
@@ -58,14 +124,14 @@ export async function createProject(req, res) {
 }
 export async function deleteProject(req, res) {
     try {
-        const parsed = deleteProjectSchema.safeParse(req.body);
+        const parsed = deleteProjectSchema.safeParse(req.params);
         if (!parsed.success) {
             return res.status(400).json({
                 message: "Invalid token",
                 errors: parsed.error.format(),
             });
         }
-        const { projId } = parsed.data;
+        const { projectId } = parsed.data;
         //@ts-ignore
         const userId = req.user.id;
         //@ts-ignore
@@ -74,7 +140,7 @@ export async function deleteProject(req, res) {
         const usage = req.org.usage;
         const project = await prismaClient.project.delete({
             where: {
-                id: projId,
+                id: projectId,
                 orgId: orgId,
             },
         });
