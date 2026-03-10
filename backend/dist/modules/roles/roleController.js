@@ -43,6 +43,15 @@ export async function createRole(req, res) {
                 permissionId: p.id
             }))
         });
+        await prismaClient.auditLog.create({
+            data: {
+                //@ts-ignore
+                userId: req.user.id,
+                //@ts-ignore
+                orgId: req.org.orgId,
+                action: "role:created",
+            },
+        });
         res.status(201).json({
             message: "Role Created",
             Role: rolePermission

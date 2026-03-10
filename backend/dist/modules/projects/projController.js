@@ -78,6 +78,15 @@ export async function patchProject(req, res) {
                 name: name
             }
         });
+        await prismaClient.auditLog.create({
+            data: {
+                //@ts-ignore
+                userId: req.user.id,
+                //@ts-ignore
+                orgId: req.org.orgId,
+                action: "project:updated",
+            },
+        });
         res.status(201).json({ message: "Project Patched", project });
     }
     catch (e) {
@@ -113,6 +122,15 @@ export async function createProject(req, res) {
             },
             data: {
                 count: { increment: 1 },
+            },
+        });
+        await prismaClient.auditLog.create({
+            data: {
+                //@ts-ignore
+                userId: req.user.id,
+                //@ts-ignore
+                orgId: req.org.orgId,
+                action: "project:created",
             },
         });
         res.status(201).json({ message: "Project created", project });
@@ -154,6 +172,15 @@ export async function deleteProject(req, res) {
                 },
             });
         }
+        await prismaClient.auditLog.create({
+            data: {
+                //@ts-ignore
+                userId: req.user.id,
+                //@ts-ignore
+                orgId: req.org.orgId,
+                action: "project:deleted",
+            },
+        });
         res.status(201).json({ message: "Project Deleted", project });
     }
     catch (e) {

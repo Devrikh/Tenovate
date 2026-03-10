@@ -12,7 +12,7 @@ export async function fetchUsage(req: Request, res: Response) {
 
     const usageWithLimits = usageLogs.map((u) => {
       const planFeature = orgFeatures.find(
-        (f : any) => f.feature.key === u.featureKey,
+        (f : any) => f.key === u.featureKey,
       );
       return {
         featureKey: u.featureKey,

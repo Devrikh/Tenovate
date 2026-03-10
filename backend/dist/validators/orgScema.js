@@ -5,9 +5,11 @@ export const orgCreateSchema = z.object({
         .trim()
         .min(2)
         .max(100),
-    planId: z
+    planName: z
         .string()
-        .cuid("Invalid plan ID"),
+        .trim()
+        .min(2)
+        .max(100),
 });
 export const rolePatchSchema = z.object({
     roleName: z

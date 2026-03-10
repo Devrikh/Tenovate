@@ -9,16 +9,21 @@ export async function orgCreate(req, res) {
                 errors: parsed.error.format(),
             });
         }
-        const { orgName, planId } = parsed.data;
+        const { orgName, planName } = parsed.data;
         //@ts-ignore
         const userId = req.user.id;
         if (!userId) {
             return res.status(401).json({ message: "User not authenticated" });
         }
+        const plan = await prismaClient.plan.findUnique({
+            where: {
+                name: planName
+            }
+        });
         const org = await prismaClient.organization.create({
             data: {
                 name: orgName,
-                planId,
+                planId: plan?.id,
             },
         });
         const ownerRole = await prismaClient.role.findFirst({
@@ -33,6 +38,20 @@ export async function orgCreate(req, res) {
                 userId: userId,
                 orgId: org.id,
                 roleId: ownerRole?.id,
+            },
+        });
+        await prismaClient.auditLog.create({
+            data: {
+                userId: userId,
+                orgId: org.id,
+                action: "org:created",
+            },
+        });
+        await prismaClient.auditLog.create({
+            data: {
+                userId: userId,
+                orgId: org.id,
+                action: "membership:added",
             },
         });
         res.status(201).json({
@@ -81,6 +100,8 @@ export async function fetchOrg(req, res) {
 export async function deleteOrg(req, res) {
     try {
         //@ts-ignore
+        const userId = req.user.id;
+        //@ts-ignore
         const { orgId } = req.org;
         if (!orgId) {
             return res.status(401).json({ message: "OrgId Invalid" });
@@ -90,6 +111,13 @@ export async function deleteOrg(req, res) {
         });
         const org = await prismaClient.organization.delete({
             where: { id: orgId },
+        });
+        await prismaClient.auditLog.create({
+            data: {
+                userId: userId,
+                orgId: org.id,
+                action: "org:deleted",
+            },
         });
         res.status(201).json({
             message: "Organization deleted successfully",

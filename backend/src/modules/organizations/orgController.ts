@@ -12,7 +12,7 @@ export async function orgCreate(req: Request, res: Response) {
         errors: parsed.error.format(),
       });
     }
-    const { orgName, planId } = parsed.data;
+    const { orgName, planName } = parsed.data;
 
     //@ts-ignore
     const userId = req.user.id;
@@ -20,10 +20,17 @@ export async function orgCreate(req: Request, res: Response) {
       return res.status(401).json({ message: "User not authenticated" });
     }
 
+
+    const plan= await prismaClient.plan.findUnique({
+      where:{
+        name: planName
+      }
+    })
+
     const org = await prismaClient.organization.create({
       data: {
         name: orgName,
-        planId,
+        planId: plan?.id as string,
       },
     });
 

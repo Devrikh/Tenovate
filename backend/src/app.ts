@@ -2,10 +2,18 @@ import express from "express";
 import cors from "cors";
 import env from "dotenv";
 import apiRouter from "./routes/index.js"
+import { setupSwagger } from "./config/swagger.js";
+
+
 
 env.config();
 
 const app = express();
+
+
+
+setupSwagger(app)
+
 app.use(cors());
 app.use(express.json());
 

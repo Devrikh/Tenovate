@@ -65,6 +65,15 @@ export async function patchMemberRole(req, res) {
                 roleId: validatedRole?.id,
             },
         });
+        await prismaClient.auditLog.create({
+            data: {
+                //@ts-ignore
+                userId: req.user.id,
+                //@ts-ignore
+                orgId: req.org.orgId,
+                action: "member:update_role",
+            },
+        });
         res.status(201).json({
             message: "Membership Patched",
             membership: membership,
@@ -95,6 +104,15 @@ export async function deleteMember(req, res) {
                     userId: userId,
                     orgId: orgId,
                 },
+            },
+        });
+        await prismaClient.auditLog.create({
+            data: {
+                //@ts-ignore
+                userId: req.user.id,
+                //@ts-ignore
+                orgId: req.org.orgId,
+                action: "member:remove",
             },
         });
         res.status(201).json({

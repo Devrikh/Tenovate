@@ -82,7 +82,7 @@ export async function patchMemberRole(req: Request, res: Response) {
         userId: req.user.id,
         //@ts-ignore
         orgId: req.org.orgId,
-        action: "member:update_role",
+        action: "member:updated_role",
       },
     });
 

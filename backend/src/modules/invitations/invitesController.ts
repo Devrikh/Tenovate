@@ -173,7 +173,7 @@ export async function acceptMember(req: Request, res: Response) {
         //@ts-ignore
         userId: req.user.id,
         //@ts-ignore
-        orgId: req.org.orgId,
+        orgId: invitation.orgId,
         action: "invite:accepted",
       },
     });
@@ -182,7 +182,7 @@ export async function acceptMember(req: Request, res: Response) {
         //@ts-ignore
         userId: req.user.id,
         //@ts-ignore
-        orgId: req.org.orgId,
+        orgId: invitation.orgId,
         action: "membership:added",
       },
     });
