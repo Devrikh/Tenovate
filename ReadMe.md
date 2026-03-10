@@ -1,166 +1,412 @@
-# Multi-Tenant SaaS Infrastructure Platform
+# Multi-Tenant SaaS Infrastructure Backend
 
-## Overview
+## Quick Summary
 
-Early-stage SaaS applications often struggle with correctly implementing multi-tenancy, access control, and subscription logic. These systems are critical for scalability and security, but are frequently built in an ad-hoc or hardcoded way.
+A reusable backend infrastructure layer for building SaaS applications.
 
-This project is a production-ready backend infrastructure layer that provides:
+Instead of implementing authentication, organizations, RBAC, feature gating, usage limits, and collaboration systems from scratch for every SaaS product, this backend centralizes those capabilities into a modular API that other applications can integrate with.
 
-* Multi-tenant architecture (organizations)
-* Database-driven RBAC (roles and permissions)
-* Subscription plans with feature gating
+### Core Capabilities
+
+* Multi-tenant organization management
+* Role-based access control (RBAC)
+* Team invitations and membership management
+* Feature gating for subscription plans
 * Usage tracking and limit enforcement
-* Invitation-based onboarding
+* Audit logging for organizational activity
 
-It is designed to serve as a reusable foundation for building real-world SaaS products.
+API documentation available at:
 
----
-
-## Problem
-
-Most SaaS backends face the following issues:
-
-* Weak or missing tenant isolation
-* Hardcoded roles (e.g. `ADMIN`) instead of flexible permissions
-* No structured way to manage feature access across plans
-* Lack of usage tracking and enforcement
-* Poor onboarding flows for teams
-
-These limitations lead to systems that are difficult to scale, extend, or secure.
+```
+/api/v1/docs
+```
 
 ---
 
-## Solution
+# Overview
 
-This project provides a clean and modular backend that solves these problems through:
+Building a SaaS product requires much more than application-specific logic.
+Most SaaS platforms must implement foundational backend systems such as:
 
-* Organization-scoped data isolation enforced via middleware
-* Role and permission management stored in the database
-* Plan-based feature access control
+* Authentication
+* Organizations / workspaces
+* Role-based permissions
+* Team onboarding
+* Feature gating
+* Usage tracking
+* Activity auditing
+
+These systems are frequently implemented repeatedly across products, often in inconsistent or tightly coupled ways.
+
+This project provides a **reusable backend infrastructure layer** that standardizes these capabilities and exposes them through modular APIs.
+
+Instead of rebuilding these systems for every SaaS product, applications can **integrate with this infrastructure and focus on their core business logic**.
+
+---
+
+# Problem
+
+Most SaaS platforms encounter similar architectural challenges:
+
+* Tenant isolation implemented incorrectly
+* Hardcoded roles such as `ADMIN` and `USER`
+* Feature access scattered across application logic
+* Missing usage tracking or quota enforcement
+* Poorly designed invitation workflows
+* Lack of centralized auditing
+
+These issues lead to backend systems that are difficult to scale, extend, and secure.
+
+---
+
+# Solution
+
+This project implements a modular SaaS backend infrastructure that provides:
+
+* Organization-based tenant isolation
+* Database-driven RBAC authorization
+* Secure invitation-based onboarding
+* Feature access control per organization
 * Usage tracking with enforceable limits
-* Secure invitation flow for team collaboration
+* Audit logging for important actions
+
+By separating these concerns into an infrastructure layer, SaaS products can reuse a consistent and scalable backend foundation.
 
 ---
 
-## Features
+# Architecture
 
-### Multi-Tenancy
-
-* Users can belong to multiple organizations
-* All data is scoped by `organizationId`
-* Middleware enforces strict isolation
-
-### RBAC (Role-Based Access Control)
-
-* Roles and permissions stored in database
-* Many-to-many mapping via `RolePermission`
-* Permissions resolved at request time
-* Middleware-based enforcement (`requirePermission`)
-
-### Plans and Feature Gating
-
-* Organizations are assigned subscription plans
-* Features are mapped to plans
-* Middleware (`requireFeature`) restricts access
-
-### Usage Tracking
-
-* Tracks feature usage per organization
-* Enforces limits (e.g. number of projects)
-* Supports free and paid tiers
-
-### Invitation System
-
-* Invite users via token-based flow
-* Assign roles during onboarding
-* Secure validation and expiration handling
-
----
-
-## Architecture
+The backend is structured around a layered middleware pipeline that handles cross-cutting concerns before reaching business logic.
 
 ### Request Flow
 
 ```
+Request
+   ↓
 Auth Middleware
    ↓
-Org Middleware 
+Organization Context Middleware
    ↓
-Permission Check (RBAC)
+RBAC Permission Check
    ↓
-Feature Check (Plan)
+Feature Access Check
    ↓
-Usage Limit Check
+Usage Limit Enforcement
    ↓
 Controller
 ```
 
----
-
-## Tech Stack
-
-* Backend: Node.js, Express
-* Frontend: Next.js
-* ORM: Prisma
-* Database: PostgreSQL
-* Authentication: JWT
+Each layer handles a specific responsibility, allowing controllers to remain clean and focused on application logic.
 
 ---
 
-## Project Structure
+# System Architecture
 
 ```
-/src
-  /routes
-  /middlewares
-  /controllers
-  /lib
-/prisma
+Client Application
+        │
+        ▼
+SaaS Infrastructure API
+        │
+        ├── Authentication
+        ├── Organizations
+        ├── RBAC Permissions
+        ├── Invitations
+        ├── Feature Flags
+        ├── Usage Tracking
+        └── Audit Logs
+        │
+        ▼
+     PostgreSQL Database
+```
+
+Applications built on top of this system interact with the infrastructure API to manage tenants, permissions, and usage policies.
+
+---
+
+# Key Capabilities
+
+## Multi-Tenant Organizations
+
+Organizations act as isolated tenants within the system.
+
+* Users can belong to multiple organizations
+* All resources are scoped by `organizationId`
+* Middleware ensures strict tenant isolation
+
+---
+
+## Role-Based Access Control (RBAC)
+
+Authorization is implemented using a database-driven RBAC model.
+
+* Roles stored in the database
+* Permissions mapped through a `RolePermission` relationship
+* Middleware enforces permissions per request
+
+This allows roles to evolve without modifying application logic.
+
+---
+
+## Organization and Team Management
+
+Organizations can manage collaborative workspaces.
+
+Features include:
+
+* Member management
+* Role assignment
+* Permission updates
+* Member removal
+
+---
+
+## Invitation System
+
+Secure invitation flow for onboarding new members.
+
+Capabilities include:
+
+* Token-based invitations
+* Role assignment during onboarding
+* Token expiration handling
+* Acceptance and rejection flows
+
+---
+
+## Projects
+
+Projects demonstrate how product-level resources can be scoped to organizations and integrated with RBAC and usage limits.
+
+---
+
+## Feature Gating
+
+Features can be enabled or disabled for organizations.
+
+This enables subscription tiers such as:
+
+* Free
+* Pro
+* Mythic
+
+Feature checks are enforced through middleware.
+
+---
+
+## Usage Tracking
+
+The system tracks organization-level usage of certain features.
+
+Examples include:
+
+* Maximum number of projects
+* Maximum number of members
+
+Requests exceeding limits are automatically rejected.
+
+---
+
+## Audit Logs
+
+Important organization activities can be recorded for security and traceability.
+
+Audit logs support:
+
+* Activity tracking
+* Security monitoring
+* Operational debugging
+
+---
+
+# Technology Stack
+
+Backend
+
+* Node.js
+* Express
+* TypeScript
+
+Database
+
+* PostgreSQL
+* Prisma ORM
+
+Authentication
+
+* JWT
+
+API Documentation
+
+* Swagger (OpenAPI)
+
+---
+
+# Project Structure
+
+```
+src
+│
+├── app.ts
+├── server.ts
+│
+├── lib
+│   └── prisma.ts
+│
+├── middlewares
+│   ├── auth.middleware.ts
+│   ├── org.middleware.ts
+│   ├── permission.middleware.ts
+│   └── error.middleware.ts
+│
+├── routes
+│   └── index.ts
+│
+├── modules
+│
+│   ├── auth
+│   ├── organizations
+│   ├── members
+│   ├── roles
+│   ├── invitations
+│   ├── projects
+│   ├── features
+│   ├── usage
+│   └── audit
+│
+└── config
+    └── swagger.ts
+```
+
+The codebase follows a **modular domain-based architecture**, where each domain has its own routes and controllers.
+
+---
+
+# API Endpoints
+
+Base URL
+
+```
+/api/v1
+```
+
+## Authentication
+
+```
+POST   /auth/signup
+POST   /auth/login
+GET    /auth/me
+POST   /auth/logout
+POST   /auth/refresh
+```
+
+## Organizations
+
+```
+POST   /organizations
+GET    /organizations/my
+GET    /organizations/:orgId
+DELETE /organizations/:orgId
+```
+
+## Members
+
+```
+GET    /organizations/:orgId/members
+PATCH  /organizations/:orgId/members/:userId/role
+DELETE /organizations/:orgId/members/:userId
+```
+
+## Invitations
+
+```
+POST   /organizations/:orgId/invitations/invite
+GET    /organizations/:orgId/invitations
+
+POST   /organizations/invitations/accept
+POST   /organizations/invitations/reject
+```
+
+## Roles
+
+```
+GET    /organizations/:orgId/roles
+POST   /organizations/:orgId/roles
+PATCH  /organizations/:orgId/roles/:roleId
+DELETE /organizations/:orgId/roles/:roleId
+```
+
+## Projects
+
+```
+POST   /organizations/:orgId/projects
+GET    /organizations/:orgId/projects
+GET    /organizations/:orgId/projects/:projectId
+PATCH  /organizations/:orgId/projects/:projectId
+DELETE /organizations/:orgId/projects/:projectId
+```
+
+## Features
+
+```
+GET    /organizations/:orgId/features
+PATCH  /organizations/:orgId/features
+```
+
+## Usage
+
+```
+GET    /organizations/:orgId/usage
+GET    /organizations/:orgId/usage/:featureKey
+```
+
+## Audit Logs
+
+```
+GET /organizations/:orgId/audit-logs
+```
+
+## System
+
+```
+GET /health
+GET /docs
 ```
 
 ---
 
-## Example Use Case
+# Getting Started
 
-**Scenario:** Organization on Free Plan (limit: 3 projects)
-
-1. User creates project → allowed
-2. User creates 4th project → request blocked (limit reached)
-3. Organization upgrades plan → limit increases
-
----
-
-## Getting Started
-
-### 1. Clone Repository
+### Clone the repository
 
 ```
-git clone <your-repo-url>
-cd <project-name>
+git clone <repo-url>
+cd project
 ```
 
-### 2. Install Dependencies
+### Install dependencies
 
 ```
 npm install
 ```
 
-### 3. Setup Environment Variables
+### Setup environment variables
 
-Create a `.env` file:
+Create `.env`
 
 ```
 DATABASE_URL=
 JWT_SECRET=
+PORT=3000
 ```
 
-### 4. Run Migrations
+### Run database migrations
 
 ```
 npx prisma migrate dev
 ```
 
-### 5. Start Development Server
+### Start the development server
 
 ```
 npm run dev
@@ -168,44 +414,30 @@ npm run dev
 
 ---
 
-## API Overview
+# API Documentation
 
-### Auth
+Interactive Swagger documentation available at:
 
-* `POST /auth/signup`
-* `POST /auth/login`
-
-### Organization
-
-* `POST /org/create`
-* `GET /org/my-orgs`
-
-### Projects
-
-* `POST /project/create`
-* `GET /project/my-projects`
-
-### Invitations
-
-* `POST /org/invite`
-* `POST /org/invite/accept`
+```
+/api/v1/docs
+```
 
 ---
 
-## What This Project Demonstrates
+# What This Project Demonstrates
 
-* Designing a scalable multi-tenant backend
-* Implementing database-driven RBAC
-* Enforcing feature access via subscription plans
-* Handling usage limits and quotas
-* Building clean middleware-based architecture
+* Designing scalable **multi-tenant backend infrastructure**
+* Implementing **database-driven RBAC**
+* Building modular **Express architecture**
+* Enforcing **feature access and usage limits**
+* Structuring maintainable backend systems
 
 ---
 
-## Future Improvements
+# Future Improvements
 
-* Billing integration (e.g. Stripe)
+* Billing integration
 * API key management
 * Rate limiting per organization
-* Audit logs
-* Caching layer (Redis)
+* Redis caching layer
+* Background job processing
