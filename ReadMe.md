@@ -284,7 +284,7 @@ The codebase follows a **modular domain-based architecture**, where each domain 
 
 # API Endpoints
 
-Base URL
+Base API URL
 
 ```
 /api/v1
@@ -398,6 +398,7 @@ Create `.env`
 DATABASE_URL=
 JWT_SECRET=
 PORT=3000
+BASE_URL=
 ```
 
 ### Run database migrations
