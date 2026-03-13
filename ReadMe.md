@@ -18,7 +18,7 @@ Instead of implementing authentication, organizations, RBAC, feature gating, usa
 API documentation available at:
 
 ```
-/api/v1/docs
+https://tenovate.onrender.com/api/v1/docs/
 ```
 
 ---
