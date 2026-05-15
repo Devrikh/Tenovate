@@ -1,444 +1,314 @@
-# Multi-Tenant SaaS Infrastructure Backend
+# Tenovate — Multi-Tenant SaaS Infrastructure Backend
 
-## Quick Summary
+> **Live API Docs → [https://tenovate.onrender.com/api/v1/docs/](https://tenovate.onrender.com/api/v1/docs/)**
 
-A reusable backend infrastructure layer for building SaaS applications.
-
-Instead of implementing authentication, organizations, RBAC, feature gating, usage limits, and collaboration systems from scratch for every SaaS product, this backend centralizes those capabilities into a modular API that other applications can integrate with.
-
-### Core Capabilities
-
-* Multi-tenant organization management
-* Role-based access control (RBAC)
-* Team invitations and membership management
-* Feature gating for subscription plans
-* Usage tracking and limit enforcement
-* Audit logging for organizational activity
-
-API documentation available at:
-
-```
-https://tenovate.onrender.com/api/v1/docs/
-```
+A reusable backend infrastructure layer for building SaaS applications. Instead of rebuilding authentication, multi-tenancy, RBAC, feature gating, usage limits, and audit logging for every product, Tenovate centralizes these into a modular API that any SaaS application can integrate with.
 
 ---
 
-# Overview
+## Core Capabilities
 
-Building a SaaS product requires much more than application-specific logic.
-Most SaaS platforms must implement foundational backend systems such as:
-
-* Authentication
-* Organizations / workspaces
-* Role-based permissions
-* Team onboarding
-* Feature gating
-* Usage tracking
-* Activity auditing
-
-These systems are frequently implemented repeatedly across products, often in inconsistent or tightly coupled ways.
-
-This project provides a **reusable backend infrastructure layer** that standardizes these capabilities and exposes them through modular APIs.
-
-Instead of rebuilding these systems for every SaaS product, applications can **integrate with this infrastructure and focus on their core business logic**.
+- Multi-tenant organization management with strict tenant isolation
+- Database-driven role-based access control (RBAC)
+- Secure token-based invitation and onboarding flow
+- Feature gating per subscription plan (Free / Pro / Mythic)
+- Usage tracking and limit enforcement per organization
+- Audit logging for all significant actions
 
 ---
 
-# Problem
+## Middleware Pipeline
 
-Most SaaS platforms encounter similar architectural challenges:
+Every request passes through a layered pipeline. Each layer has a single responsibility and fails fast — controllers only run if all checks pass.
 
-* Tenant isolation implemented incorrectly
-* Hardcoded roles such as `ADMIN` and `USER`
-* Feature access scattered across application logic
-* Missing usage tracking or quota enforcement
-* Poorly designed invitation workflows
-* Lack of centralized auditing
+```mermaid
+flowchart TD
+    A([Incoming Request]) --> B[Auth Middleware\nVerifies JWT · Attaches user to req]
+    B --> C[Org Context Middleware\nVerifies membership · Attaches org + features to req]
+    C --> D[RBAC Permission Check\nLooks up role permissions in DB · 403 if missing]
+    D --> E[Feature Access Check\nChecks plan features in DB · 403 if not enabled]
+    E --> F[Usage Limit Enforcement\nChecks usage count vs limit · 403 if exceeded]
+    F --> G([Controller\nPure business logic — no auth checks needed])
 
-These issues lead to backend systems that are difficult to scale, extend, and secure.
-
----
-
-# Solution
-
-This project implements a modular SaaS backend infrastructure that provides:
-
-* Organization-based tenant isolation
-* Database-driven RBAC authorization
-* Secure invitation-based onboarding
-* Feature access control per organization
-* Usage tracking with enforceable limits
-* Audit logging for important actions
-
-By separating these concerns into an infrastructure layer, SaaS products can reuse a consistent and scalable backend foundation.
-
----
-
-# Architecture
-
-The backend is structured around a layered middleware pipeline that handles cross-cutting concerns before reaching business logic.
-
-### Request Flow
-
-```
-Request
-   ↓
-Auth Middleware
-   ↓
-Organization Context Middleware
-   ↓
-RBAC Permission Check
-   ↓
-Feature Access Check
-   ↓
-Usage Limit Enforcement
-   ↓
-Controller
+    B -->|Invalid / expired JWT| X1([401 Unauthorized])
+    C -->|Not a member of this org| X2([403 Forbidden])
+    D -->|Missing permission| X3([403 Forbidden])
+    E -->|Feature not on plan| X4([403 Forbidden])
+    F -->|Quota exhausted| X5([403 Limit Reached])
 ```
 
-Each layer handles a specific responsibility, allowing controllers to remain clean and focused on application logic.
+---
+
+## Database Schema
+
+```mermaid
+erDiagram
+    User {
+        string id PK
+        string username
+        string email
+        string password
+    }
+    Organization {
+        string id PK
+        string name
+        string planId FK
+    }
+    Membership {
+        string id PK
+        string userId FK
+        string orgId FK
+        string roleId FK
+    }
+    Role {
+        string id PK
+        string name
+    }
+    Permission {
+        string id PK
+        string key
+    }
+    RolePermission {
+        string roleId FK
+        string permissionId FK
+    }
+    Plan {
+        string id PK
+        string name
+    }
+    Feature {
+        string id PK
+        string key
+    }
+    PlanFeature {
+        string planId FK
+        string featureId FK
+        int limit
+    }
+    UsageLog {
+        string id PK
+        string orgId FK
+        string featureKey
+        int count
+    }
+    Invitation {
+        string id PK
+        string email
+        string orgId FK
+        string roleId FK
+        string token
+        enum status
+        datetime expiresAt
+    }
+    Project {
+        string id PK
+        string name
+        string orgId FK
+    }
+    AuditLog {
+        string id PK
+        string userId
+        string orgId
+        string action
+        datetime createdAt
+    }
+
+    User ||--o{ Membership : "belongs to"
+    Organization ||--o{ Membership : "has"
+    Role ||--o{ Membership : "assigned via"
+    Role ||--o{ RolePermission : "has"
+    Permission ||--o{ RolePermission : "granted by"
+    Plan ||--o{ Organization : "used by"
+    Plan ||--o{ PlanFeature : "includes"
+    Feature ||--o{ PlanFeature : "included in"
+    Organization ||--o{ UsageLog : "tracked in"
+    Organization ||--o{ Invitation : "sends"
+    Organization ||--o{ Project : "owns"
+    Role ||--o{ Invitation : "assigned via"
+```
 
 ---
 
-# System Architecture
+## Design Decisions
+
+### Why database-driven RBAC instead of hardcoded roles?
+
+Most backends start with `if (user.role === "ADMIN")` scattered across controllers. This works until requirements change — and they always do. Adding a "Moderator" role means finding every permission check in the codebase and updating it.
+
+Tenovate stores roles and permissions in the database with a `Role → RolePermission → Permission` join table. The middleware looks up permissions at runtime. Adding a new role or changing what a role can do requires no code changes — just a database update. This is how production SaaS systems are built.
+
+The tradeoff is one extra DB lookup per request on permission-gated routes. This is acceptable and addressable with a Redis cache layer (listed under future improvements).
+
+### Why a layered middleware pipeline instead of per-controller checks?
+
+Each middleware layer handles exactly one concern. Controllers never check auth, membership, permissions, or feature access — that's all done before they run. This means:
+
+- Controllers are testable without mocking auth
+- Adding a new permission to a route is one line in the router
+- Security rules can't be accidentally skipped in a new controller
+- The pipeline is auditable — you can read the middleware chain and know exactly what's enforced
+
+### Why token-based invitations with hashed storage?
+
+Invitation tokens are generated as random 32-byte hex strings, then SHA-256 hashed before storage. The raw token is sent to the user; only the hash lives in the database. This means a database breach doesn't expose valid invitation tokens — the same pattern used for password reset tokens.
+
+---
+
+## Test Coverage
+
+The middleware pipeline is integration-tested end-to-end against a real PostgreSQL database (Docker).
 
 ```
-Client Application
-        │
-        ▼
-SaaS Infrastructure API
-        │
-        ├── Authentication
-        ├── Organizations
-        ├── RBAC Permissions
-        ├── Invitations
-        ├── Feature Flags
-        ├── Usage Tracking
-        └── Audit Logs
-        │
-        ▼
-     PostgreSQL Database
+Auth Middleware         5 tests   Expired JWT → 401, tampered token → 401
+Org Isolation           7 tests   Cross-tenant boundary — Org B cannot touch Org A's resources
+RBAC                    7 tests   Member role blocked from every admin endpoint
+Feature Gating          3 tests   FREE plan blocked, PRO allowed, DB change takes effect immediately
+Usage Limits            4 tests   Fills to limit → blocked, delete frees quota → allowed again
+Invitation Flow         4 tests   Happy path, expired token, rejection, invalid token
+─────────────────────────────────────────────────────
+Total                  30 passing
 ```
 
-Applications built on top of this system interact with the infrastructure API to manage tenants, permissions, and usage policies.
+Run tests:
+
+```bash
+# Requires Docker — starts a clean Postgres container
+docker run --name tenovate-test-db \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=tenovate_test \
+  -p 5432:5432 -d postgres:16
+
+npm test
+```
 
 ---
 
-# Key Capabilities
+## Technology Stack
 
-## Multi-Tenant Organizations
-
-Organizations act as isolated tenants within the system.
-
-* Users can belong to multiple organizations
-* All resources are scoped by `organizationId`
-* Middleware ensures strict tenant isolation
-
----
-
-## Role-Based Access Control (RBAC)
-
-Authorization is implemented using a database-driven RBAC model.
-
-* Roles stored in the database
-* Permissions mapped through a `RolePermission` relationship
-* Middleware enforces permissions per request
-
-This allows roles to evolve without modifying application logic.
+| Layer | Technology |
+|---|---|
+| Runtime | Node.js + TypeScript |
+| Framework | Express |
+| Database | PostgreSQL |
+| ORM | Prisma |
+| Auth | JWT |
+| API Docs | Swagger / OpenAPI |
+| Testing | Jest + Supertest |
 
 ---
 
-## Organization and Team Management
-
-Organizations can manage collaborative workspaces.
-
-Features include:
-
-* Member management
-* Role assignment
-* Permission updates
-* Member removal
-
----
-
-## Invitation System
-
-Secure invitation flow for onboarding new members.
-
-Capabilities include:
-
-* Token-based invitations
-* Role assignment during onboarding
-* Token expiration handling
-* Acceptance and rejection flows
-
----
-
-## Projects
-
-Projects demonstrate how product-level resources can be scoped to organizations and integrated with RBAC and usage limits.
-
----
-
-## Feature Gating
-
-Features can be enabled or disabled for organizations.
-
-This enables subscription tiers such as:
-
-* Free
-* Pro
-* Mythic
-
-Feature checks are enforced through middleware.
-
----
-
-## Usage Tracking
-
-The system tracks organization-level usage of certain features.
-
-Examples include:
-
-* Maximum number of projects
-* Maximum number of members
-
-Requests exceeding limits are automatically rejected.
-
----
-
-## Audit Logs
-
-Important organization activities can be recorded for security and traceability.
-
-Audit logs support:
-
-* Activity tracking
-* Security monitoring
-* Operational debugging
-
----
-
-# Technology Stack
-
-Backend
-
-* Node.js
-* Express
-* TypeScript
-
-Database
-
-* PostgreSQL
-* Prisma ORM
-
-Authentication
-
-* JWT
-
-API Documentation
-
-* Swagger (OpenAPI)
-
----
-
-# Project Structure
+## Project Structure
 
 ```
-src
-│
+src/
 ├── app.ts
 ├── server.ts
-│
-├── lib
-│   └── prisma.ts
-│
-├── middlewares
-│   ├── auth.middleware.ts
-│   ├── org.middleware.ts
-│   ├── permission.middleware.ts
-│   └── error.middleware.ts
-│
-├── routes
+├── lib/
+│   └── prisma/
+├── middlewares/
+│   ├── authMiddleware.ts
+│   ├── orgMiddleware.ts
+│   ├── permissionMiddleware.ts
+│   ├── featureMiddleware.ts
+│   └── usageMiddleware.ts
+├── modules/
+│   ├── auth/
+│   ├── organizations/
+│   ├── membership/
+│   ├── roles/
+│   ├── invitations/
+│   ├── projects/
+│   ├── features/
+│   ├── usage/
+│   └── audit/
+├── routes/
 │   └── index.ts
-│
-├── modules
-│
-│   ├── auth
-│   ├── organizations
-│   ├── members
-│   ├── roles
-│   ├── invitations
-│   ├── projects
-│   ├── features
-│   ├── usage
-│   └── audit
-│
-└── config
+├── validators/
+└── config/
     └── swagger.ts
 ```
 
-The codebase follows a **modular domain-based architecture**, where each domain has its own routes and controllers.
-
 ---
 
-# API Endpoints
+## API Endpoints
 
-Base API URL
-
-```
-/api/v1
-```
-
-## Authentication
+Base URL: `/api/v1` — Interactive docs at **[https://tenovate.onrender.com/api/v1/docs/](https://tenovate.onrender.com/api/v1/docs/)**
 
 ```
-POST   /auth/signup
-POST   /auth/login
-GET    /auth/me
-POST   /auth/logout
-POST   /auth/refresh
-```
+Authentication
+  POST   /auth/signup
+  POST   /auth/login
+  GET    /auth/me
 
-## Organizations
+Organizations
+  POST   /organizations
+  GET    /organizations/my
+  GET    /organizations/:orgId
+  DELETE /organizations/:orgId
 
-```
-POST   /organizations
-GET    /organizations/my
-GET    /organizations/:orgId
-DELETE /organizations/:orgId
-```
+Members
+  GET    /organizations/:orgId/members
+  PATCH  /organizations/:orgId/members/:userId/role
+  DELETE /organizations/:orgId/members/:userId
 
-## Members
+Invitations
+  POST   /organizations/:orgId/invitations/invite
+  GET    /organizations/:orgId/invitations
+  GET    /invitations/accept?token=
+  GET    /invitations/decline?token=
 
-```
-GET    /organizations/:orgId/members
-PATCH  /organizations/:orgId/members/:userId/role
-DELETE /organizations/:orgId/members/:userId
-```
+Roles
+  GET    /organizations/:orgId/roles
+  POST   /organizations/:orgId/roles
 
-## Invitations
+Projects
+  POST   /organizations/:orgId/projects
+  GET    /organizations/:orgId/projects
+  GET    /organizations/:orgId/projects/:projectId
+  PATCH  /organizations/:orgId/projects/:projectId
+  DELETE /organizations/:orgId/projects/:projectId
 
-```
-POST   /organizations/:orgId/invitations/invite
-GET    /organizations/:orgId/invitations
+Features
+  GET    /organizations/:orgId/features
 
-POST   /organizations/invitations/accept
-POST   /organizations/invitations/reject
-```
+Usage
+  GET    /organizations/:orgId/usage
+  GET    /organizations/:orgId/usage/:featureKey
 
-## Roles
-
-```
-GET    /organizations/:orgId/roles
-POST   /organizations/:orgId/roles
-PATCH  /organizations/:orgId/roles/:roleId
-DELETE /organizations/:orgId/roles/:roleId
-```
-
-## Projects
-
-```
-POST   /organizations/:orgId/projects
-GET    /organizations/:orgId/projects
-GET    /organizations/:orgId/projects/:projectId
-PATCH  /organizations/:orgId/projects/:projectId
-DELETE /organizations/:orgId/projects/:projectId
-```
-
-## Features
-
-```
-GET    /organizations/:orgId/features
-PATCH  /organizations/:orgId/features
-```
-
-## Usage
-
-```
-GET    /organizations/:orgId/usage
-GET    /organizations/:orgId/usage/:featureKey
-```
-
-## Audit Logs
-
-```
-GET /organizations/:orgId/audit-logs
-```
-
-## System
-
-```
-GET /health
-GET /docs
+Audit Logs
+  GET    /organizations/:orgId/audit-logs
 ```
 
 ---
 
-# Getting Started
+## Getting Started
 
-### Clone the repository
-
-```
+```bash
 git clone <repo-url>
-cd project
-```
-
-### Install dependencies
-
-```
+cd backend
 npm install
 ```
 
-### Setup environment variables
+Create `.env`:
 
-Create `.env`
-
-```
-DATABASE_URL=
-JWT_SECRET=
+```env
+DATABASE_URL=postgresql://user:pass@localhost:5432/tenovate
+JWT_SECRET=your-secret
 PORT=3000
-BASE_URL=
 ```
 
-### Run database migrations
-
-```
+```bash
 npx prisma migrate dev
-```
-
-### Start the development server
-
-```
 npm run dev
 ```
 
 ---
 
-# API Documentation
+## Future Improvements
 
-Interactive Swagger documentation available at:
-
-```
-/api/v1/docs
-```
-
----
-
-# What This Project Demonstrates
-
-* Designing scalable **multi-tenant backend infrastructure**
-* Implementing **database-driven RBAC**
-* Building modular **Express architecture**
-* Enforcing **feature access and usage limits**
-* Structuring maintainable backend systems
-
----
-
-# Future Improvements
-
-* Billing integration
-* API key management
-* Rate limiting per organization
-* Redis caching layer
-* Background job processing
+- Billing integration (Stripe)
+- API key management per organization
+- Rate limiting per organization
+- Redis caching for permission lookups
+- Background job processing
