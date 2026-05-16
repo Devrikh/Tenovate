@@ -2,6 +2,16 @@
 
 > **Live API Docs → [https://tenovate.onrender.com/api/v1/docs/](https://tenovate.onrender.com/api/v1/docs/)**
 
+![CI](https://img.shields.io/github/actions/workflow/status/Devrikh/Tenovate/ci.yml?style=for-the-badge&label=CI&logo=githubactions&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)
+![Jest](https://img.shields.io/badge/Jest-C21325?style=for-the-badge&logo=jest&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+
 A reusable backend infrastructure layer for building SaaS applications. Instead of rebuilding authentication, multi-tenancy, RBAC, feature gating, usage limits, and audit logging for every product, Tenovate centralizes these into a modular API that any SaaS application can integrate with.
 
 ---
