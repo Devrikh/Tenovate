@@ -5,7 +5,13 @@
     "moduleResolution": "node",
     "verbatimModuleSyntax": false,
     "noUncheckedSideEffectImports": false,
+    "isolatedModules": false,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "types": ["jest", "node"],
+    "paths": {
+      "@app": ["./src/app.ts"],
+      "@lib/prisma": ["./src/lib/prisma/prisma.ts"]
+    }
   }
 }
